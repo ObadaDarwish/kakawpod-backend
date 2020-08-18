@@ -1,14 +1,9 @@
 const express = require('express');
 const route = express.Router();
 const User = require('../models/user_model');
+const userController = require('../controllers/user_controller');
 
-
-route.get('/', (req, res, next) => {
-    User.find().then(users => {
-            res.send(users);
-        }
-    )
-});
+route.put('/update', userController.updateProfile);
 
 
 module.exports = route;

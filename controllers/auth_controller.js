@@ -6,6 +6,8 @@ const sgMail = require('@sendgrid/mail');
 const validator = require('validator');
 const errorHandler = require('../utils/errorHandler')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+
 exports.login = (req, res, next) => {
 
     const {email, password} = req.body;

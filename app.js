@@ -1,4 +1,3 @@
-
 const createError = require('http-errors');
 const express = require('express');
 const app = express();
@@ -11,7 +10,7 @@ const bodyParser = require('body-parser');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth_route');
 const userRoute = require('./routes/user_route');
-
+const isAuth = require('./middlewares/is_auth.js');
 
 // CORS headers
 app.use((req, res, next) => {
@@ -34,7 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
-app.use('/users', userRoute);
+app.use('/users', isAuth, userRoute);
 
 
 // catch 404 and forward to error handler
