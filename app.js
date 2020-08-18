@@ -1,5 +1,9 @@
+
 const createError = require('http-errors');
 const express = require('express');
+const app = express();
+const dotenv = require('dotenv');
+dotenv.config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
@@ -7,9 +11,7 @@ const bodyParser = require('body-parser');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth_route');
 const userRoute = require('./routes/user_route');
-const app = express();
-const dotenv = require('dotenv');
-dotenv.config();
+
 
 // CORS headers
 app.use((req, res, next) => {

@@ -25,7 +25,7 @@ var userSchema = new Schema({
     },
     authority: {
         type: Number,
-        default:0
+        default: 0
     },
     email_verified: {
         type: Boolean,
@@ -35,6 +35,12 @@ var userSchema = new Schema({
         type: Boolean,
         default: 0
     },
+    shipping_addresses: {
+        type: Number,
+        default: 0
+    },
+    resetToken: String,
+    resetTokenExp: Number
 
 }, {timestamps: true});
 
