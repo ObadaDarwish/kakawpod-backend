@@ -1,7 +1,19 @@
 const User = require('../models/user_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
+let Address = require('../models/address_model');
 
+
+exports.getUser = (req, res, next) => {
+    const userID = req.user._id;
+    User.findById(userID).then(user => {
+        let userObj = user.toObject();
+        delete userObj.password
+        res.json(userObj)
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+};
 
 exports.updateProfile = (req, res, next) => {
     const {name, email, password} = req.body;
@@ -48,6 +60,63 @@ exports.updateProfile = (req, res, next) => {
 
         } else {
             next(errorHandler('User does not exist', 405));
+        }
+    }).catch(err => {
+        res.status(500).send(err)
+    })
+}
+
+exports.addAdress = (req, res, next) => {
+    const userID = req.user._id
+    Address.find({user_id: userID}).then(users => {
+        if (users.length < 2) {
+            let newAddress = new Address({...req.body, user_id: userID});
+            newAddress.save().then(() => {
+                return User.findById(userID);
+            }).then((user) => {
+                user.shipping_addresses += 1;
+                return user.save();
+            }).then(() => {
+                res.send('address was added successfully');
+            }).catch(err => {
+                res.status(500).send(err)
+            })
+        } else {
+            next(errorHandler('only two addresses are allowed per user', 405));
+        }
+    }).catch(err => {
+        res.status(500).send(err)
+    })
+};
+
+exports.updateAddress = (req, res, next) => {
+    const addressID = req.params.code;
+    Address.findOneAndUpdate({_id: addressID, user_id: req.user._id}, req.body, (err, result) => {
+        if (result) {
+            if (!err) {
+                res.send('address was successfully updated')
+            } else {
+                res.status(500).send(err)
+            }
+        } else {
+            next(errorHandler('Not authorized!', 405))
+        }
+
+    }).catch(err => {
+        res.status(500).send(err)
+    })
+};
+exports.deleteAddress = (req, res, next) => {
+    const addressID = req.params.code;
+    Address.findOneAndDelete({_id: addressID, user_id: req.user._id}, (err, result) => {
+        if (result) {
+            if (!err) {
+                res.send('address was successfully deleted')
+            } else {
+                res.status(500).send(err)
+            }
+        } else {
+            next(errorHandler('Not authorized!', 405))
         }
     }).catch(err => {
         res.status(500).send(err)
