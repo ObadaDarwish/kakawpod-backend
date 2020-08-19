@@ -8,8 +8,11 @@ exports.getUser = (req, res, next) => {
     const userID = req.user._id;
     User.findById(userID).then(user => {
         let userObj = user.toObject();
-        delete userObj.password
-        res.json(userObj)
+        delete userObj.password;
+        Address.find({user_id: userID}).then(addresses => {
+            userObj.addresses = addresses
+            res.json(userObj)
+        });
     }).catch(err => {
         res.status(500).send(err);
     })
