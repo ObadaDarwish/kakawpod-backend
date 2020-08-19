@@ -111,10 +111,20 @@ exports.updateAddress = (req, res, next) => {
 };
 exports.deleteAddress = (req, res, next) => {
     const addressID = req.params.code;
-    Address.findOneAndDelete({_id: addressID, user_id: req.user._id}, (err, result) => {
+    const userID = req.user._id
+    Address.findOneAndDelete({_id: addressID, user_id: userID}, (err, result) => {
         if (result) {
             if (!err) {
-                res.send('address was successfully deleted')
+                User.findById(userID).then(user => {
+                    if (user.shipping_addresses > 0) {
+                        user.shipping_addresses -= 1;
+                        user.save().then(() => {
+                            res.send('address was successfully deleted')
+                        }).catch(err => {
+                            res.status(500).send(err)
+                        })
+                    }
+                })
             } else {
                 res.status(500).send(err)
             }
