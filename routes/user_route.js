@@ -8,5 +8,6 @@ route.put('/update', userController.updateProfile);
 route.post('/address', userController.addAdress);
 route.put('/address/:code', userController.updateAddress);
 route.delete('/address/:code', userController.deleteAddress);
+route.post('/verifyEmail', userController.requestEmailVerification);
 
 module.exports = route;

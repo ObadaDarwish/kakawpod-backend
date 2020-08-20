@@ -1,6 +1,9 @@
 const User = require('../models/user_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
+const crypto = require('crypto');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 let Address = require('../models/address_model');
 
 
@@ -134,4 +137,39 @@ exports.deleteAddress = (req, res, next) => {
     }).catch(err => {
         res.status(500).send(err)
     })
-}
+};
+
+
+exports.requestEmailVerification = (req, res, next) => {
+    const userID = req.user._id;
+    const userEmail = req.user.email;
+    User.findById(userID).then(user => {
+        crypto.randomBytes(32, (err, buf) => {
+            if (!err) {
+                let token = buf.toString('hex');
+                user.verify_email_token = token;
+                user.verify_email_token_exp = Date.now() + 3600000;
+                user.save().then(() => {
+                    const msg = {
+                        to: userEmail,
+                        from: 'obada_567@hotmail.co.uk',
+                        subject: 'Verify Email',
+                        template_id: 'd-8d621f33192e456694b5573c8818dd41',
+                        dynamic_template_data: {
+                            verify_email_link: `https://odchocolate.com/verifyEmail/${token}`
+                        }
+                    };
+                    sgMail.send(msg).then(() => {
+                        res.send('Verify email was successfully sent');
+                    }).catch(err => {
+                        res.status(500).send(err)
+                    });
+                })
+            }
+        })
+    }).catch(err => {
+        res.status(500).send(err)
+    })
+};
+
+

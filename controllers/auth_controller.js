@@ -120,13 +120,34 @@ exports.updatePassword = (req, res, next) => {
                 user.save().then(() => {
                     res.send('Password has been updated successfully');
                 }).catch(err => {
-                    console.log(err)
+                    res.status(500).send(err)
                 })
             })
         } else {
             next(errorHandler('Token has expired.', 405))
         }
     }).catch(err => {
-        console.log(err)
+        res.status(500).send(err)
+    })
+}
+
+
+exports.verifyEmail = (req, res, next) => {
+    let token = req.params.code;
+    User.findOne({verify_email_token: token, verify_email_token_exp: {$gt: Date.now()}}).then((user) => {
+        if (user) {
+            user.email_verified = true;
+            user.verify_email_token=null;
+            user.verify_email_token_exp=null;
+            user.save().then(() => {
+                res.send('Email verified successfully');
+            }).catch(err => {
+                res.status(500).send(err)
+            })
+        } else {
+            next(errorHandler('Invalid token'))
+        }
+    }).catch(err => {
+        res.status(500).send(err)
     })
 }

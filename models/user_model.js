@@ -40,7 +40,9 @@ const userSchema = new Schema({
         default: 0
     },
     resetToken: String,
-    resetTokenExp: Number
+    resetTokenExp: Number,
+    verify_email_token: String,
+    verify_email_token_exp: Number
 
 }, {timestamps: true});
 
