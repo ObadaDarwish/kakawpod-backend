@@ -64,7 +64,6 @@ exports.signup = (req, res, next) => {
         next(errorHandler('Invalid Email', 405))
     }
 };
-
 exports.resetPassword = (req, res, next) => {
     const {email} = req.body;
     const isEmailValid = validator.isEmail(email);
@@ -86,7 +85,7 @@ exports.resetPassword = (req, res, next) => {
                                     subject: 'Resetting password',
                                     template_id: 'd-5ce505e731334bafa92cc6da51321334',
                                     dynamic_template_data: {
-                                        forgot_password_link: `https://odchocolate.com/resetPassword/${token}`
+                                        forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword/${token}`
                                     }
                                 };
                                 sgMail.send(msg).then(() => {
@@ -112,8 +111,6 @@ exports.resetPassword = (req, res, next) => {
 
 
 };
-
-
 exports.updatePassword = (req, res, next) => {
     const {resetToken, newPassword} = req.body;
     User.findOne({resetToken: resetToken, resetTokenExp: {$gt: Date.now()}}).then(user => {
@@ -135,8 +132,6 @@ exports.updatePassword = (req, res, next) => {
         res.status(500).send(err)
     })
 }
-
-
 exports.verifyEmail = (req, res, next) => {
     let token = req.params.code;
     User.findOne({verify_email_token: token, verify_email_token_exp: {$gt: Date.now()}}).then((user) => {

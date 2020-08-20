@@ -156,7 +156,7 @@ exports.requestEmailVerification = (req, res, next) => {
                         subject: 'Verify Email',
                         template_id: 'd-8d621f33192e456694b5573c8818dd41',
                         dynamic_template_data: {
-                            verify_email_link: `https://odchocolate.com/verifyEmail/${token}`
+                            verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail/${token}`
                         }
                     };
                     sgMail.send(msg).then(() => {
