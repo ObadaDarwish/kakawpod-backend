@@ -73,32 +73,37 @@ exports.resetPassword = (req, res, next) => {
     } else {
         User.findOne({email: email}).then(user => {
             if (user) {
-                crypto.randomBytes(32, (err, buf) => {
-                    if (!err) {
-                        const token = buf.toString('hex');
-                        user.resetToken = token;
-                        user.resetTokenExp = Date.now() + 3600000;
-                        user.save().then(result => {
-                            const msg = {
-                                to: email,
-                                from: 'obada_567@hotmail.co.uk',
-                                subject: 'Resetting password',
-                                template_id: 'd-5ce505e731334bafa92cc6da51321334',
-                                dynamic_template_data: {
-                                    forgot_password_link: `https://odchocolate.com/resetPassword/${token}`
-                                }
-                            };
-                            sgMail.send(msg).then(() => {
-                                res.send('reset password email was successfully sent');
+                if (user.email_verified) {
+                    crypto.randomBytes(32, (err, buf) => {
+                        if (!err) {
+                            const token = buf.toString('hex');
+                            user.resetToken = token;
+                            user.resetTokenExp = Date.now() + 3600000;
+                            user.save().then(result => {
+                                const msg = {
+                                    to: email,
+                                    from: 'obada_567@hotmail.co.uk',
+                                    subject: 'Resetting password',
+                                    template_id: 'd-5ce505e731334bafa92cc6da51321334',
+                                    dynamic_template_data: {
+                                        forgot_password_link: `https://odchocolate.com/resetPassword/${token}`
+                                    }
+                                };
+                                sgMail.send(msg).then(() => {
+                                    res.send('reset password email was successfully sent');
+                                }).catch(err => {
+                                    res.status(500).send(err)
+                                });
                             }).catch(err => {
                                 res.status(500).send(err)
                             });
-                        }).catch(err => {
-                            res.status(500).send(err)
-                        });
-                    }
+                        }
 
-                });
+                    });
+                } else {
+                    next(errorHandler('Please verify your email in order to reset password', 405))
+                }
+
             } else {
                 next(errorHandler('Email doesn\'t exist.', 404))
             }
@@ -137,8 +142,8 @@ exports.verifyEmail = (req, res, next) => {
     User.findOne({verify_email_token: token, verify_email_token_exp: {$gt: Date.now()}}).then((user) => {
         if (user) {
             user.email_verified = true;
-            user.verify_email_token=null;
-            user.verify_email_token_exp=null;
+            user.verify_email_token = null;
+            user.verify_email_token_exp = null;
             user.save().then(() => {
                 res.send('Email verified successfully');
             }).catch(err => {
