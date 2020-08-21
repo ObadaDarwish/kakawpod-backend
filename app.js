@@ -7,12 +7,14 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const bodyParser = require('body-parser');
+const multer = require('./middlewares/upload-image');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth_route');
 const userRoute = require('./routes/user_route');
 const adminRoute = require('./routes/admin_route');
 const isAuth = require('./middlewares/is_auth.js');
 const isAdmin = require('./middlewares/is_admin');
+
 // CORS headers
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,7 +25,7 @@ app.use((req, res, next) => {
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-const multer = require('./middlewares/upload');
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));

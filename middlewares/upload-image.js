@@ -1,12 +1,13 @@
 const multer = require('multer');
-let fileObj;
+let fileObj = {images: []};
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, './images')
     },
     filename: function (req, file, cb) {
-        let fileName = Date.now() + '-' + file.originalname.replace(/ /g, '-')
-        fileObj = {...file, filename: fileName};
+        let fileName = Date.now() + '-' + file.originalname.replace(/ /g, '-');
+        fileObj = {...fileObj, ...file};
+        fileObj.images.push({url: process.env.FRONTEND_DOMAIN + "/images/" + fileName});
         cb(null, fileName)
     }
 });
@@ -19,7 +20,7 @@ const fileFilter = (req, file, cb) => {
 };
 const uploadMiddleware = (req, res, next) => {
     multer({storage: storage, fileFilter: fileFilter, limits: {fileSize: 1500000}})
-        .fields([{name: 'product_image'}, {name: 'avatar'}])(req, res, err => {
+        .array('product_image', 5)(req, res, err => {
             if (err || err instanceof multer.MulterError) {
                 const error = new Error();
                 error.error = err;
