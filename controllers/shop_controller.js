@@ -5,20 +5,19 @@ const errorHandler = require('../utils/errorHandler');
 exports.addToCart = (req, res, next) => {
     const { product_id } = req.body;
     const userId = req.user._id;
-    Product.findById(product_id)
-        .then((product) => {
-            if (product) {
-                return req.user.addToCart(product);
-            } else {
-                next(errorHandler('Product not found', 405));
+    Product.findById(product_id).then((product) => {
+        if (product) {
+            try {
+                req.user.addToCart(product).then(() => {
+                    res.send('Item added to cart successfully');
+                });
+            } catch (err) {
+                res.status(405).send({ message: err.message });
             }
-        })
-        .then(() => {
-            res.send('Item added to cart successfully');
-        })
-        .catch((err) => {
-            res.status(405).send({ message: err.message });
-        });
+        } else {
+            next(errorHandler('Product not found', 405));
+        }
+    });
 };
 
 exports.removeFromCart = (req, res, next) => {
@@ -41,4 +40,15 @@ exports.clearCart = (req, res, next) => {
         .catch((err) => {
             res.status(500).send(err);
         });
+};
+exports.updateCart = (req, res, next) => {
+    const quantity = req.body.quantity;
+    const itemId = req.params.code;
+    try {
+        req.user.updateCart(itemId, quantity).then(() => {
+            res.send('item updated successfully');
+        });
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
 };

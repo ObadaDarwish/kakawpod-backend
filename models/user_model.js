@@ -85,4 +85,19 @@ userSchema.methods.clearCart = function () {
     this.cart = [];
     return this.save();
 };
+userSchema.methods.updateCart = function (itemId, quantity) {
+    if (quantity > 0) {
+        let currentCart = [...this.cart];
+        let itemIndex = currentCart.findIndex(
+            (item) => item._id.toString() === itemId.toString()
+        );
+        let updatedItem = currentCart[itemIndex];
+        updatedItem.quantity = quantity;
+        currentCart.splice(itemIndex, 1, updatedItem);
+        this.cart = currentCart;
+        return this.save();
+    } else {
+        throw new Error('quantity must be at least 1');
+    }
+};
 module.exports = mongoose.model('User', userSchema);
