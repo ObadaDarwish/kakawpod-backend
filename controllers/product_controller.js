@@ -12,7 +12,8 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getAllProduct = (req, res, next) => {
-    const { category, chocolate_type } = req.query;
+    const { category, chocolate_type, page = 1 } = req.query;
+    let total = 0;
     findObj = {};
     if (category) {
         findObj.category = category;
@@ -21,8 +22,18 @@ exports.getAllProduct = (req, res, next) => {
         findObj.chocolate_type = chocolate_type;
     }
     Product.find(findObj)
-        .then((products) => {
-            res.send(products);
+        .count()
+        .then((totalProducts) => {
+            total = totalProducts;
+            Product.find(findObj)
+                .skip((page - 1) * 10)
+                .limit(10)
+                .then((products) => {
+                    res.send({ products: products, total: total });
+                })
+                .catch((err) => {
+                    res.status(500).send(err);
+                });
         })
         .catch((err) => {
             res.status(500).send(err);
