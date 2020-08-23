@@ -2,6 +2,17 @@ const Product = require('../models/product_model');
 const User = require('../models/user_model');
 const errorHandler = require('../utils/errorHandler');
 
+exports.getMyCart = (req, res, next) => {
+    req.user
+        .populate('cart.product_id')
+        .execPopulate()
+        .then((products) => {
+            res.send(products.cart);
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
 exports.addToCart = (req, res, next) => {
     const { product_id } = req.body;
     const userId = req.user._id;
