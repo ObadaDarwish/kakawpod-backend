@@ -13,6 +13,7 @@ const authRouter = require('./routes/auth_route');
 const userRoute = require('./routes/user_route');
 const adminRoute = require('./routes/admin_route');
 const shopRoute = require('./routes/shop_route');
+const productRoute = require('./routes/product_route');
 const isAuth = require('./middlewares/is_auth.js');
 const isAdmin = require('./middlewares/is_admin');
 
@@ -42,6 +43,7 @@ app.use(multer);
 // routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
+app.use('/products', productRoute);
 app.use('/users', isAuth, userRoute);
 app.use('/shop', isAuth, shopRoute);
 app.use('/admin', isAuth, isAdmin, adminRoute);
