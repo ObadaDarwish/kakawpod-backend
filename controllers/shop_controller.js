@@ -73,15 +73,21 @@ exports.createOrder = (req, res, next) => {
             .execPopulate()
             .then((user) => {
                 if (user.cart.length) {
+                    let cartTotal = 0;
                     let orderItems = [...user.cart].map((cartItem) => {
+                        cartTotal +=
+                            cartItem.product_id.price * cartItem.quantity;
                         return {
                             item_id: cartItem.product_id._id,
+                            price: cartItem.product_id.price,
                             quantity: cartItem.quantity,
                         };
                     });
                     let newOrder = new Order({
                         items: orderItems,
                         address_id: address_id,
+                        status: 'pending',
+                        total: cartTotal,
                         user_id: req.user._id,
                     });
                     newOrder

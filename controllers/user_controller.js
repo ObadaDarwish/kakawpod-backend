@@ -1,4 +1,5 @@
 const User = require('../models/user_model');
+const Order = require('../models/order_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
@@ -201,6 +202,17 @@ exports.requestEmailVerification = (req, res, next) => {
                     });
                 }
             });
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
+
+exports.getOrders = (req, res, next) => {
+    Order.find({ user_id: req.user._id })
+        .populate('items.item_id')
+        .then((orders) => {
+            res.send(orders);
         })
         .catch((err) => {
             res.status(500).send(err);
