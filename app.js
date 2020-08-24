@@ -43,8 +43,8 @@ app.use(multer);
 // routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
-app.use('/products', productRoute);
-app.use('/users', isAuth, userRoute);
+app.use('/product', productRoute);
+app.use('/user', isAuth, userRoute);
 app.use('/shop', isAuth, shopRoute);
 app.use('/admin', isAuth, isAdmin, adminRoute);
 
