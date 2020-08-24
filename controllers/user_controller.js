@@ -218,21 +218,21 @@ exports.getOrders = (req, res, next) => {
             res.status(500).send(err);
         });
 };
-exports.updateOrder = (req, res, next) => {
+exports.cancelOrder = (req, res, next) => {
     const { order_id, order_status } = req.body;
-    if (order_status === 'cancelled') {
-        Order.findOneAndUpdate(
-            { _id: order_id, user_id: req.user._id },
-            { status: order_status },
-            (err, result) => {
-                if (err) {
-                    next(errorHandler(err, 405));
-                } else {
+    Order.findOneAndUpdate(
+        { _id: order_id, user_id: req.user._id, status: 'pending' },
+        { status: 'cancelled' },
+        (err, result) => {
+            if (result) {
+                if (!err) {
                     res.send('Order updated successfully');
+                } else {
+                    res.status(500).send(err);
                 }
+            } else {
+                next(errorHandler('Not authorized!', 405));
             }
-        );
-    } else {
-        next(errorHandler('Only cancelled status is allowed', 405));
-    }
+        }
+    );
 };

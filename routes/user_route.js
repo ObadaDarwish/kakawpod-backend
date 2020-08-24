@@ -10,5 +10,5 @@ route.put('/address/:code', userController.updateAddress);
 route.delete('/address/:code', userController.deleteAddress);
 route.post('/verifyEmail', userController.requestEmailVerification);
 route.get('/orders', userController.getOrders);
-route.put('/order', userController.updateOrder);
+route.put('/order', userController.cancelOrder);
 module.exports = route;
