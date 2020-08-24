@@ -1,5 +1,6 @@
 const Product = require('../models/product_model');
 const User = require('../models/user_model');
+const Order = require('../models/order_model');
 const errorHandler = require('../utils/errorHandler');
 
 exports.getMyCart = (req, res, next) => {
@@ -61,5 +62,55 @@ exports.updateCart = (req, res, next) => {
         });
     } catch (err) {
         res.status(500).send({ message: err.message });
+    }
+};
+
+exports.createOrder = (req, res, next) => {
+    if (req.body && req.body.address_id) {
+        const { address_id } = req.body.address_id;
+        req.user
+            .populate('cart.product_id')
+            .execPopulate()
+            .then((user) => {
+                if (user.cart.length) {
+                    let orderItems = [...user.cart].map((cartItem) => {
+                        return {
+                            item_id: cartItem.product_id._id,
+                            quantity: cartItem.quantity,
+                        };
+                    });
+                    let newOrder = new Order({
+                        items: orderItems,
+                        address_id: address_id,
+                        user_id: req.user._id,
+                    });
+                    newOrder
+                        .save()
+                        .then((order) => {
+                            return req.user.clearCart();
+                        })
+                        .then(() => {
+                            orderItems.forEach((item, index) => {
+                                Product.findById(item.item_id).then(
+                                    (product) => {
+                                        product.quantity =
+                                            product.quantity - item.quantity;
+                                        product.save();
+                                    }
+                                );
+                                if (orderItems.length === index + 1) {
+                                    res.send('Order saved successfully');
+                                }
+                            });
+                        })
+                        .catch((err) => {
+                            res.status(500).send(err);
+                        });
+                } else {
+                    next(errorHandler('cart is empty', 405));
+                }
+            });
+    } else {
+        next(errorHandler('address id is required', 405));
     }
 };
