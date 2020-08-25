@@ -67,7 +67,7 @@ exports.updateCart = (req, res, next) => {
 
 exports.createOrder = (req, res, next) => {
     if (req.body && req.body.address_id) {
-        const { address_id } = req.body.address_id;
+        const { address_id } = req.body;
         req.user
             .populate('cart.product_id')
             .execPopulate()
