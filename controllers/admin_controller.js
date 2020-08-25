@@ -112,3 +112,42 @@ exports.getOrders = (req, res, next) => {
                 });
         });
 };
+
+exports.updateOrder = (req, res, next) => {
+    const order_id = req.params.code;
+    const order_status = req.body.order_status;
+    const authority = req.user.authority;
+    const canUpdate = (authority) => {
+        if (authority === 1) {
+            return true;
+        } else {
+            if (
+                order_status === 'out for delivery' ||
+                order_status === 'delivered'
+            ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    };
+    if (canUpdate(authority)) {
+        Order.findOneAndUpdate(
+            { _id: order_id },
+            { status: order_status },
+            (err, result) => {
+                if (result) {
+                    if (!err) {
+                        res.send('Order updated successfully');
+                    } else {
+                        res.status(500).send(err);
+                    }
+                } else {
+                    next(errorHandler('Not authorized!', 405));
+                }
+            }
+        );
+    } else {
+        next(errorHandler('Not authorized!', 405));
+    }
+};

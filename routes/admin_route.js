@@ -12,5 +12,6 @@ route.delete('/product/:code', isAdmin, admincontroller.deleteProduct);
 
 // employee
 route.get('/orders', isEmployee_Admin, admincontroller.getOrders);
+route.put('/order/:code', isEmployee_Admin, admincontroller.updateOrder);
 
 module.exports = route;
