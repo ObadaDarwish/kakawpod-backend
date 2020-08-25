@@ -14,7 +14,7 @@ const orderSchema = new Schema(
         address_id: { type: Schema.Types.ObjectId, ref: 'Address' },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
-    { timestamp: true }
+    { timestamps: true }
 );
 
 module.exports = mongoose.model('Order', orderSchema);

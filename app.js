@@ -15,7 +15,6 @@ const adminRoute = require('./routes/admin_route');
 const shopRoute = require('./routes/shop_route');
 const productRoute = require('./routes/product_route');
 const isAuth = require('./middlewares/is_auth.js');
-const isAdmin = require('./middlewares/is_admin');
 
 // CORS headers
 app.use((req, res, next) => {
@@ -46,7 +45,7 @@ app.use('/auth', authRouter);
 app.use('/product', productRoute);
 app.use('/user', isAuth, userRoute);
 app.use('/shop', isAuth, shopRoute);
-app.use('/admin', isAuth, isAdmin, adminRoute);
+app.use('/admin', isAuth, adminRoute);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
