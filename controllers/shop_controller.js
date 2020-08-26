@@ -123,8 +123,8 @@ exports.createOrder = (req, res, next) => {
 
 exports.addToMixBox = (req, res, next) => {
     const { product_id } = req.body;
-    Product.findById(product_id).then((product) => {
-        if (product) {
+    Product.find({ _id: product_id, category: 'bar' }).then((product) => {
+        if (product.length) {
             try {
                 req.user.addToMixBox(product).then(() => {
                     res.send('Item added to mix box successfully');
@@ -133,7 +133,9 @@ exports.addToMixBox = (req, res, next) => {
                 res.status(405).send({ message: err.message });
             }
         } else {
-            next(errorHandler('Product not found', 405));
+            next(
+                errorHandler('you can only add chocolate bars to mix box', 405)
+            );
         }
     });
 };
