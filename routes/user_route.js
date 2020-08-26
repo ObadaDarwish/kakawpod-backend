@@ -11,4 +11,5 @@ route.delete('/address/:code', userController.deleteAddress);
 route.post('/verifyEmail', userController.requestEmailVerification);
 route.get('/orders', userController.getOrders);
 route.put('/order', userController.cancelOrder);
+route.get('/mixbox', userController.getMixBox);
 module.exports = route;

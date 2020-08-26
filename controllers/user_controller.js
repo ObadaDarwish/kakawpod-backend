@@ -236,3 +236,14 @@ exports.cancelOrder = (req, res, next) => {
         }
     );
 };
+exports.getMixBox = (req, res, next) => {
+    req.user
+        .populate('mix_box.items.product_id')
+        .execPopulate()
+        .then((products) => {
+            res.send(products.mix_box);
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
