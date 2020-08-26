@@ -122,11 +122,11 @@ exports.createOrder = (req, res, next) => {
 };
 
 exports.addToMixBox = (req, res, next) => {
-    const { product_id } = req.body;
-    Product.find({ _id: product_id, category: 'bar' }).then((product) => {
-        if (product.length) {
+    const { product_id, box_id } = req.body;
+    Product.findOne({ _id: product_id, category: 'bar' }).then((product) => {
+        if (product) {
             try {
-                req.user.addToMixBox(product).then(() => {
+                req.user.addToMixBox(product, box_id).then(() => {
                     res.send('Item added to mix box successfully');
                 });
             } catch (err) {

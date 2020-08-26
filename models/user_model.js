@@ -49,6 +49,11 @@ const userSchema = new Schema(
                     quantity: { type: Number, required: true },
                 },
             ],
+            box_id: {
+                type: Schema.Types.ObjectId,
+                ref: 'Product',
+                required: true,
+            },
             limit: { type: Number, default: 3 },
         },
         resetToken: String,
@@ -91,10 +96,11 @@ userSchema.methods.updateCart = function (itemId, quantity) {
 
 function addItem(product, collection) {
     let isProdFound =
-        collection &&
-        collection.findIndex(
-            (item) => item.product_id.toString() === product._id.toString()
-        );
+        (collection.length &&
+            collection.findIndex(
+                (item) => item.product_id.toString() === product._id.toString()
+            )) ||
+        -1;
     let newQuantity = 1;
     const updatedItems = [...collection];
     if (isProdFound >= 0) {
@@ -121,9 +127,10 @@ function getMixBoxCount(box) {
     return count;
 }
 
-userSchema.methods.addToMixBox = function (product) {
+userSchema.methods.addToMixBox = function (product, box_id) {
     if (getMixBoxCount(this.mix_box.items) < this.mix_box.limit) {
         this.mix_box.items = addItem(product, this.mix_box.items);
+        this.mix_box.box_id = box_id;
         return this.save();
     } else {
         throw new Error(
