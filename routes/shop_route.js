@@ -11,5 +11,8 @@ route.put('/cart/:code', shopController.updateCart);
 
 // orders
 route.post('/order', shopController.createOrder);
+// mix box
+route.post('/mixBox', shopController.addToMixBox);
+route.put('/mixBox', shopController.updateMixBox);
 
 module.exports = route;

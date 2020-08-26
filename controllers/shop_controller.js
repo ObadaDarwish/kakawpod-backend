@@ -120,3 +120,31 @@ exports.createOrder = (req, res, next) => {
         next(errorHandler('address id is required', 405));
     }
 };
+
+exports.addToMixBox = (req, res, next) => {
+    const { product_id } = req.body;
+    Product.findById(product_id).then((product) => {
+        if (product) {
+            try {
+                req.user.addToMixBox(product).then(() => {
+                    res.send('Item added to mix box successfully');
+                });
+            } catch (err) {
+                res.status(405).send({ message: err.message });
+            }
+        } else {
+            next(errorHandler('Product not found', 405));
+        }
+    });
+};
+
+exports.updateMixBox = (req, res, next) => {
+    const { product_id, quantity } = req.body;
+    try {
+        req.user.updateMixBox(product_id, quantity).then(() => {
+            res.send('Item updated successfully');
+        });
+    } catch (err) {
+        res.status(405).send({ message: err.message });
+    }
+};
