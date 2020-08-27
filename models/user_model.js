@@ -127,10 +127,9 @@ function getMixBoxCount(box) {
     return count;
 }
 
-userSchema.methods.addToMixBox = function (product, box_id) {
+userSchema.methods.addToMixBox = function (product) {
     if (getMixBoxCount(this.mix_box.items) < this.mix_box.limit) {
         this.mix_box.items = addItem(product, this.mix_box.items);
-        this.mix_box.box_id = box_id;
         return this.save();
     } else {
         throw new Error(
@@ -157,5 +156,10 @@ userSchema.methods.updateMixBox = function (product_id, qunatity) {
             `You can only add ${this.mix_box.limit} bars in the box`
         );
     }
+};
+userSchema.methods.updateMixBoxLimit = function (box_id, limit) {
+    this.mix_box.box_id = box_id;
+    this.mix_box.limit = limit;
+    return this.save();
 };
 module.exports = mongoose.model('User', userSchema);

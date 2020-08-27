@@ -122,11 +122,11 @@ exports.createOrder = (req, res, next) => {
 };
 
 exports.addToMixBox = (req, res, next) => {
-    const { product_id, box_id } = req.body;
+    const { product_id } = req.body;
     Product.findOne({ _id: product_id, category: 'bar' }).then((product) => {
         if (product) {
             try {
-                req.user.addToMixBox(product, box_id).then(() => {
+                req.user.addToMixBox(product).then(() => {
                     res.send('Item added to mix box successfully');
                 });
             } catch (err) {
@@ -146,6 +146,25 @@ exports.updateMixBox = (req, res, next) => {
         req.user.updateMixBox(product_id, quantity).then(() => {
             res.send('Item updated successfully');
         });
+    } catch (err) {
+        res.status(405).send({ message: err.message });
+    }
+};
+exports.updateMixBoxLimit = (req, res, next) => {
+    const { box_id } = req.body;
+    try {
+        Product.findOne({ _id: box_id, category: 'mix box' }).then(
+            (product) => {
+                if (product) {
+                    let limit = product.name.replace(' bars', '');
+                    req.user.updateMixBoxLimit(box_id, limit).then(() => {
+                        res.send('Box updated successfully');
+                    });
+                } else {
+                    next(errorHandler('Product not found', 405));
+                }
+            }
+        );
     } catch (err) {
         res.status(405).send({ message: err.message });
     }
