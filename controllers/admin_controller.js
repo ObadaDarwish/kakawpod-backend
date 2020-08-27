@@ -96,6 +96,7 @@ exports.getOrders = (req, res, next) => {
         .then((totalOrders) => {
             total = totalOrders;
             Order.find(findObj)
+                .sort({ createdAt: -1 })
                 .populate([
                     {
                         path: 'items.item_id',

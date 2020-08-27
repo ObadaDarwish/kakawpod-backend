@@ -209,14 +209,25 @@ exports.requestEmailVerification = (req, res, next) => {
 };
 
 exports.getOrders = (req, res, next) => {
+    const { page = 1 } = req.query;
+    let total = 0;
     Order.find({ user_id: req.user._id })
-        .populate('items.item_id')
-        .populate('items.sub_items.sub_item_id')
-        .then((orders) => {
-            res.send(orders);
-        })
-        .catch((err) => {
-            res.status(500).send(err);
+        .count()
+        .then((count) => {
+            total = count;
+            Order.find({ user_id: req.user._id })
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * 10)
+                .limit(10)
+                .populate('items.item_id')
+                .populate('items.sub_items.sub_item_id')
+                .exec(function (err, orders) {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        res.send({ orders: orders, total: total });
+                    }
+                });
         });
 };
 exports.cancelOrder = (req, res, next) => {
