@@ -6,6 +6,16 @@ const orderSchema = new Schema(
         items: [
             {
                 item_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+                price: String,
+                sub_items: [
+                    {
+                        sub_item_id: {
+                            type: Schema.Types.ObjectId,
+                            ref: 'Product',
+                        },
+                        quantity: Number,
+                    },
+                ],
                 quantity: Number,
             },
         ],

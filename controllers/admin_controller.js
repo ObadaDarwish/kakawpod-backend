@@ -96,13 +96,18 @@ exports.getOrders = (req, res, next) => {
         .then((totalOrders) => {
             total = totalOrders;
             Order.find(findObj)
-                .populate({
-                    path: 'items.item_id',
-                    options: {
-                        limit: 10,
-                        skip: (page - 1) * 10,
+                .populate([
+                    {
+                        path: 'items.item_id',
+                        options: {
+                            limit: 10,
+                            skip: (page - 1) * 10,
+                        },
                     },
-                })
+                    {
+                        path: 'items.sub_items.sub_item_id',
+                    },
+                ])
                 .exec(function (err, orders) {
                     if (err) {
                         res.status(500).send(err);

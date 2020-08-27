@@ -61,7 +61,6 @@ const userSchema = new Schema(
             box_id: {
                 type: Schema.Types.ObjectId,
                 ref: 'Product',
-                required: true,
             },
             limit: { type: Number, default: 3 },
         },
@@ -104,12 +103,13 @@ userSchema.methods.updateCart = function (itemId, quantity) {
 };
 
 function addItem(product, collection) {
-    let isProdFound =
-        (collection.length &&
-            collection.findIndex(
-                (item) => item.product_id.toString() === product._id.toString()
-            )) ||
-        -1;
+    let isProdFound = -1;
+    if (collection.length) {
+        isProdFound = collection.findIndex(
+            (item) => item.product_id.toString() === product._id.toString()
+        );
+    }
+
     let newQuantity = 1;
     const updatedItems = [...collection];
     if (isProdFound >= 0) {
@@ -178,12 +178,20 @@ userSchema.methods.addMixBoxToCart = function () {
             quantity: item.quantity,
         };
     });
-    this.cart.push({
-        product_id: this.mix_box.box_id,
-        items: items,
-        quantity: 1,
+    let count = 0;
+    items.forEach((item) => {
+        count += item.quantity;
     });
-    return this.save();
+    if (this.mix_box.limit === count) {
+        this.cart.push({
+            product_id: this.mix_box.box_id,
+            items: items,
+            quantity: 1,
+        });
+        return this.save();
+    } else {
+        throw new Error(`Mix box is not full`);
+    }
 };
 userSchema.methods.clearMixBox = function () {
     this.mix_box.items = [];

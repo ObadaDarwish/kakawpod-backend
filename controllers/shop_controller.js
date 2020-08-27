@@ -75,11 +75,21 @@ exports.createOrder = (req, res, next) => {
             .then((user) => {
                 if (user.cart.length) {
                     let cartTotal = 0;
+                    let subItems = [];
                     let orderItems = [...user.cart].map((cartItem) => {
                         cartTotal +=
                             cartItem.product_id.price * cartItem.quantity;
+                        if (cartItem.items.length) {
+                            subItems = [...cartItem.items].map((subItem) => {
+                                return {
+                                    sub_item_id: subItem.product_id,
+                                    quantity: subItem.quantity,
+                                };
+                            });
+                        }
                         return {
                             item_id: cartItem.product_id._id,
+                            sub_items: subItems,
                             price: cartItem.product_id.price,
                             quantity: cartItem.quantity,
                         };
@@ -97,7 +107,22 @@ exports.createOrder = (req, res, next) => {
                             return req.user.clearCart();
                         })
                         .then(() => {
-                            orderItems.forEach((item, index) => {
+                            let updateProducts = [];
+                            orderItems.forEach((item) => {
+                                updateProducts.push({
+                                    item_id: item.item_id,
+                                    quantity: item.quantity,
+                                });
+                                if (item.sub_items.length) {
+                                    item.sub_items.forEach((sub_item) => {
+                                        updateProducts.push({
+                                            item_id: sub_item.sub_item_id,
+                                            quantity: sub_item.quantity,
+                                        });
+                                    });
+                                }
+                            });
+                            updateProducts.forEach((item, index) => {
                                 Product.findById(item.item_id).then(
                                     (product) => {
                                         product.quantity =
@@ -105,7 +130,7 @@ exports.createOrder = (req, res, next) => {
                                         product.save();
                                     }
                                 );
-                                if (orderItems.length === index + 1) {
+                                if (updateProducts.length === index + 1) {
                                     res.send('Order saved successfully');
                                 }
                             });
@@ -172,11 +197,15 @@ exports.updateMixBoxLimit = (req, res, next) => {
 };
 
 exports.addMixBoxToCart = (req, res, next) => {
-    req.user.addMixBoxToCart().then(() => {
-        req.user.clearMixBox().then(() => {
-            res.send('Mix bos was added to cart successfully');
+    try {
+        req.user.addMixBoxToCart().then(() => {
+            req.user.clearMixBox().then(() => {
+                res.send('Mix bos was added to cart successfully');
+            });
         });
-    });
+    } catch (err) {
+        res.status(405).send({ message: err.message });
+    }
 };
 exports.clearMixBox = (req, res, next) => {
     req.user.clearMixBox().then(() => {

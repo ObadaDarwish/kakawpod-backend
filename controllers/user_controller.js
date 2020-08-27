@@ -211,6 +211,7 @@ exports.requestEmailVerification = (req, res, next) => {
 exports.getOrders = (req, res, next) => {
     Order.find({ user_id: req.user._id })
         .populate('items.item_id')
+        .populate('items.sub_items.sub_item_id')
         .then((orders) => {
             res.send(orders);
         })
