@@ -13,7 +13,9 @@ route.put('/cart/:code', shopController.updateCart);
 route.post('/order', shopController.createOrder);
 // mix box
 route.post('/mixBox', shopController.addToMixBox);
+route.post('/mixBox/cart', shopController.addMixBoxToCart);
 route.put('/mixBox', shopController.updateMixBox);
 route.put('/mixBox/limit', shopController.updateMixBoxLimit);
+route.put('/mixBox/clear', shopController.clearMixBox);
 
 module.exports = route;

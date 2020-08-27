@@ -6,6 +6,7 @@ const errorHandler = require('../utils/errorHandler');
 exports.getMyCart = (req, res, next) => {
     req.user
         .populate('cart.product_id')
+        .populate('cart.items.product_id')
         .execPopulate()
         .then((products) => {
             res.send(products.cart);
@@ -168,4 +169,17 @@ exports.updateMixBoxLimit = (req, res, next) => {
     } catch (err) {
         res.status(405).send({ message: err.message });
     }
+};
+
+exports.addMixBoxToCart = (req, res, next) => {
+    req.user.addMixBoxToCart().then(() => {
+        req.user.clearMixBox().then(() => {
+            res.send('Mix bos was added to cart successfully');
+        });
+    });
+};
+exports.clearMixBox = (req, res, next) => {
+    req.user.clearMixBox().then(() => {
+        res.send('Mix box was cleared successfully');
+    });
 };

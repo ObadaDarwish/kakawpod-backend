@@ -23,6 +23,15 @@ const userSchema = new Schema(
         cart: [
             {
                 product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+                items: [
+                    {
+                        product_id: {
+                            type: Schema.Types.ObjectId,
+                            ref: 'Product',
+                        },
+                        quantity: { type: Number, required: true },
+                    },
+                ],
                 quantity: { type: Number, required: true },
             },
         ],
@@ -160,6 +169,24 @@ userSchema.methods.updateMixBox = function (product_id, qunatity) {
 userSchema.methods.updateMixBoxLimit = function (box_id, limit) {
     this.mix_box.box_id = box_id;
     this.mix_box.limit = limit;
+    return this.save();
+};
+userSchema.methods.addMixBoxToCart = function () {
+    let items = [...this.mix_box.items].map((item) => {
+        return {
+            product_id: item.product_id,
+            quantity: item.quantity,
+        };
+    });
+    this.cart.push({
+        product_id: this.mix_box.box_id,
+        items: items,
+        quantity: 1,
+    });
+    return this.save();
+};
+userSchema.methods.clearMixBox = function () {
+    this.mix_box.items = [];
     return this.save();
 };
 module.exports = mongoose.model('User', userSchema);
