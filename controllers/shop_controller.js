@@ -212,3 +212,52 @@ exports.clearMixBox = (req, res, next) => {
         res.send('Mix box was cleared successfully');
     });
 };
+
+exports.addToLuxuryBox = (req, res, next) => {
+    const { product_id } = req.body;
+    Product.findOne({ _id: product_id, category: 'mini bar' }).then(
+        (product) => {
+            if (product) {
+                try {
+                    req.user.addToLuxuryBox(product).then(() => {
+                        res.send('Item has been added successfully');
+                    });
+                } catch (err) {
+                    res.status(405).send({ message: err.message });
+                }
+            } else {
+                next(errorHandler('only 10g bars are allowed', 405));
+            }
+        }
+    );
+};
+exports.updateLuxuryBox = (req, res, next) => {
+    const { product_id, quantity } = req.body;
+    try {
+        req.user.updateLuxuryBox(product_id, quantity).then(() => {
+            res.send('Item updated successfully');
+        });
+    } catch (err) {
+        res.status(405).send({ message: err.message });
+    }
+};
+exports.updateLuxuryBoxSettings = (req, res, next) => {
+    const { box_id, packaging_id } = req.body;
+    Product.findOne({
+        _id: box_id,
+        category: 'luxury box',
+    }).then((product) => {
+        try {
+            req.user.updateLuxuryBoxSettings(product, packaging_id).then(() => {
+                res.send('box updated successfully');
+            });
+        } catch (err) {
+            res.status(405).send({ message: err.message });
+        }
+    });
+};
+exports.clearLuxuryBox = (req, res, next) => {
+    req.user.clearLuxuryBox().then(() => {
+        res.send('Luxury box was cleared successfully');
+    });
+};

@@ -64,6 +64,20 @@ const userSchema = new Schema(
             },
             limit: { type: Number, default: 3 },
         },
+        luxury_box: {
+            box_id: {
+                type: Schema.Types.ObjectId,
+                ref: 'Product',
+            },
+            box_packaging: { type: Schema.Types.ObjectId, ref: 'Product' },
+            weight: { type: Number, default: 500 },
+            items: [
+                {
+                    product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+                    quantity: { type: Number, required: true },
+                },
+            ],
+        },
         resetToken: String,
         resetTokenExp: Number,
         verify_email_token: String,
@@ -128,9 +142,9 @@ function addItem(product, collection) {
     return updatedItems;
 }
 
-function getMixBoxCount(box) {
+function getMixBoxCount(items) {
     let count = 0;
-    box.forEach((item) => {
+    items.forEach((item) => {
         count += item.quantity;
     });
     return count;
@@ -197,4 +211,56 @@ userSchema.methods.clearMixBox = function () {
     this.mix_box.items = [];
     return this.save();
 };
+
+function getItemsWeightLuxuryBox(items) {
+    let weight = 0;
+    items.forEach((item) => {
+        weight += item.quantity * 10;
+    });
+    return weight;
+}
+
+userSchema.methods.addToLuxuryBox = function (product) {
+    if (
+        getItemsWeightLuxuryBox(this.luxury_box.items) < this.luxury_box.weight
+    ) {
+        this.luxury_box.items = addItem(product, this.luxury_box.items);
+        return this.save();
+    } else {
+        throw new Error(
+            `You can only add ${this.mix_box.limit} bars in the box`
+        );
+    }
+};
+userSchema.methods.updateLuxuryBoxSettings = function (product, packaging_id) {
+    this.luxury_box.box_id = product._id;
+    this.luxury_box.weight = product.weight;
+    this.luxury_box.box_packaging = packaging_id;
+    return this.save();
+};
+userSchema.methods.updateLuxuryBox = function (product_id, qunatity) {
+    let box = [...this.luxury_box.items];
+    let isProductFound = box.findIndex(
+        (item) => item.product_id.toString() === product_id.toString()
+    );
+    if (isProductFound !== -1) {
+        box[isProductFound].quantity = qunatity;
+    } else {
+        throw new Error(`Product not found`);
+    }
+    let count = getItemsWeightLuxuryBox(box);
+    if (count <= this.luxury_box.weight) {
+        this.luxury_box.items = box;
+        return this.save();
+    } else {
+        throw new Error(
+            `You can only add ${this.luxury_box.weight / 10} bars in the box`
+        );
+    }
+};
+userSchema.methods.clearLuxuryBox = function () {
+    this.luxury_box.items = [];
+    return this.save();
+};
+
 module.exports = mongoose.model('User', userSchema);

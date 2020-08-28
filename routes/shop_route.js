@@ -13,9 +13,13 @@ route.put('/cart/:code', shopController.updateCart);
 route.post('/order', shopController.createOrder);
 // mix box
 route.post('/mixBox', shopController.addToMixBox);
-route.post('/mixBox/cart', shopController.addMixBoxToCart);
 route.put('/mixBox', shopController.updateMixBox);
+route.post('/mixBox/cart', shopController.addMixBoxToCart);
 route.put('/mixBox/limit', shopController.updateMixBoxLimit);
 route.put('/mixBox/clear', shopController.clearMixBox);
-
+// luxury box
+route.post('/luxuryBox', shopController.addToLuxuryBox);
+route.put('/luxuryBox', shopController.updateLuxuryBox);
+route.put('/luxuryBox/settings', shopController.updateLuxuryBoxSettings);
+route.put('/luxuryBox/clear', shopController.clearLuxuryBox);
 module.exports = route;
