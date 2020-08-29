@@ -20,6 +20,7 @@ route.put('/mixBox/clear', shopController.clearMixBox);
 // luxury box
 route.post('/luxuryBox', shopController.addToLuxuryBox);
 route.put('/luxuryBox', shopController.updateLuxuryBox);
+route.post('/luxuryBox/cart', shopController.addLuxuryBoxToCart);
 route.put('/luxuryBox/settings', shopController.updateLuxuryBoxSettings);
 route.put('/luxuryBox/clear', shopController.clearLuxuryBox);
 module.exports = route;

@@ -115,18 +115,27 @@ exports.createOrder = (req, res, next) => {
                                 });
                                 if (item.sub_items.length) {
                                     item.sub_items.forEach((sub_item) => {
-                                        updateProducts.push({
-                                            item_id: sub_item.sub_item_id,
-                                            quantity: sub_item.quantity,
-                                        });
+                                        let isFound = updateProducts.findIndex(
+                                            (product) =>
+                                                product.item_id.toString() ===
+                                                sub_item.sub_item_id.toString()
+                                        );
+                                        if (isFound === -1) {
+                                            updateProducts.push({
+                                                item_id: sub_item.sub_item_id,
+                                                quantity: sub_item.quantity,
+                                            });
+                                        } else {
+                                            updateProducts[isFound].quantity +=
+                                                sub_item.quantity;
+                                        }
                                     });
                                 }
                             });
                             updateProducts.forEach((item, index) => {
                                 Product.findById(item.item_id).then(
                                     (product) => {
-                                        product.quantity =
-                                            product.quantity - item.quantity;
+                                        product.quantity -= item.quantity;
                                         product.save();
                                     }
                                 );
@@ -150,7 +159,7 @@ exports.createOrder = (req, res, next) => {
 exports.addToMixBox = (req, res, next) => {
     const { product_id } = req.body;
     Product.findOne({ _id: product_id, category: 'bar' }).then((product) => {
-        if (product) {
+        if (product && product.quantity >= 1) {
             try {
                 req.user.addToMixBox(product).then(() => {
                     res.send('Item added to mix box successfully');
@@ -159,22 +168,26 @@ exports.addToMixBox = (req, res, next) => {
                 res.status(405).send({ message: err.message });
             }
         } else {
-            next(
-                errorHandler('you can only add chocolate bars to mix box', 405)
-            );
+            next(errorHandler('Not allowed', 405));
         }
     });
 };
 
 exports.updateMixBox = (req, res, next) => {
     const { product_id, quantity } = req.body;
-    try {
-        req.user.updateMixBox(product_id, quantity).then(() => {
-            res.send('Item updated successfully');
-        });
-    } catch (err) {
-        res.status(405).send({ message: err.message });
-    }
+    Product.findOne({ _id: product_id, category: 'bar' }).then((product) => {
+        if (product && product.quantity >= quantity) {
+            try {
+                req.user.updateMixBox(product_id, quantity).then(() => {
+                    res.send('Item updated successfully');
+                });
+            } catch (err) {
+                res.status(405).send({ message: err.message });
+            }
+        } else {
+            next(errorHandler('Not allowed', 405));
+        }
+    });
 };
 exports.updateMixBoxLimit = (req, res, next) => {
     const { box_id } = req.body;
@@ -217,7 +230,7 @@ exports.addToLuxuryBox = (req, res, next) => {
     const { product_id } = req.body;
     Product.findOne({ _id: product_id, category: 'mini bar' }).then(
         (product) => {
-            if (product) {
+            if (product && product.quantity >= 1) {
                 try {
                     req.user.addToLuxuryBox(product).then(() => {
                         res.send('Item has been added successfully');
@@ -226,20 +239,29 @@ exports.addToLuxuryBox = (req, res, next) => {
                     res.status(405).send({ message: err.message });
                 }
             } else {
-                next(errorHandler('only 10g bars are allowed', 405));
+                next(errorHandler('No allowed', 405));
             }
         }
     );
 };
 exports.updateLuxuryBox = (req, res, next) => {
     const { product_id, quantity } = req.body;
-    try {
-        req.user.updateLuxuryBox(product_id, quantity).then(() => {
-            res.send('Item updated successfully');
-        });
-    } catch (err) {
-        res.status(405).send({ message: err.message });
-    }
+    Product.findOne({
+        _id: product_id,
+        category: 'mini bar',
+    }).then((product) => {
+        if (product && product.quantity >= quantity) {
+            try {
+                req.user.updateLuxuryBox(product_id, quantity).then(() => {
+                    res.send('Item updated successfully');
+                });
+            } catch (err) {
+                res.status(405).send({ message: err.message });
+            }
+        } else {
+            next(errorHandler('No allowed', 405));
+        }
+    });
 };
 exports.updateLuxuryBoxSettings = (req, res, next) => {
     const { box_id, packaging_id } = req.body;
@@ -260,4 +282,15 @@ exports.clearLuxuryBox = (req, res, next) => {
     req.user.clearLuxuryBox().then(() => {
         res.send('Luxury box was cleared successfully');
     });
+};
+exports.addLuxuryBoxToCart = (req, res, next) => {
+    try {
+        req.user.addLuxuryBoxToCart().then(() => {
+            req.user.clearLuxuryBox().then(() => {
+                res.send('Luxury box was added to cart successfully');
+            });
+        });
+    } catch (err) {
+        res.status(405).send({ message: err.message });
+    }
 };

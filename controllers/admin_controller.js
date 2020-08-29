@@ -81,7 +81,7 @@ exports.getOrders = (req, res, next) => {
     let total = 0;
     const {
         status = 'pending',
-        start_at = currentDate - 86400000,
+        start_at = currentDate - 86400,
         end_at = currentDate,
         page = 1,
     } = req.query;

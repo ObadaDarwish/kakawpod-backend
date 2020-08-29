@@ -32,7 +32,12 @@ const userSchema = new Schema(
                         quantity: { type: Number, required: true },
                     },
                 ],
+                packaging_id: {
+                    type: Schema.Types.ObjectId,
+                    ref: 'Product',
+                },
                 quantity: { type: Number, required: true },
+                type: { type: String, default: 'bar', required: true },
             },
         ],
         authority: {
@@ -201,6 +206,7 @@ userSchema.methods.addMixBoxToCart = function () {
             product_id: this.mix_box.box_id,
             items: items,
             quantity: 1,
+            type: 'mix box',
         });
         return this.save();
     } else {
@@ -262,5 +268,28 @@ userSchema.methods.clearLuxuryBox = function () {
     this.luxury_box.items = [];
     return this.save();
 };
-
+userSchema.methods.addLuxuryBoxToCart = function () {
+    let items = [...this.luxury_box.items].map((item) => {
+        return {
+            product_id: item.product_id,
+            quantity: item.quantity,
+        };
+    });
+    let weight = 0;
+    items.forEach((item) => {
+        weight += item.quantity * 10;
+    });
+    if (this.luxury_box.weight === weight) {
+        this.cart.push({
+            product_id: this.luxury_box.box_id,
+            packaging_id: this.luxury_box.packaging_id,
+            items: items,
+            quantity: 1,
+            type: 'luxury box',
+        });
+        return this.save();
+    } else {
+        throw new Error(`Mix box is not full`);
+    }
+};
 module.exports = mongoose.model('User', userSchema);
