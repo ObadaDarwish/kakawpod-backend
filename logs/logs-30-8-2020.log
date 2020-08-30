@@ -1,0 +1,3 @@
+Sun, 30 Aug 2020 19:41:09 GMT GET /user 200 862 - 4187.664 ms Obada Darwish PostmanRuntime/7.26.3
+Sun, 30 Aug 2020 19:42:39 GMT GET /logs 404 23 - 3.578 ms unknown user PostmanRuntime/7.26.3
+Sun, 30 Aug 2020 19:42:59 GMT GET / 200 96 - 483.295 ms unknown user PostmanRuntime/7.26.3

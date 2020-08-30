@@ -5,9 +5,11 @@ const dotenv = require('dotenv');
 dotenv.config();
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const logger = require('morgan');
 const bodyParser = require('body-parser');
 const multer = require('./middlewares/upload-image');
+const morgan = require('morgan');
+const morganHelper = require('./utils/morganHelper');
+const fs = require('fs');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth_route');
 const userRoute = require('./routes/user_route');
@@ -31,14 +33,16 @@ app.use((req, res, next) => {
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-app.use(logger('dev'));
+app.use(morgan('dev'));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use(multer);
-
+// logs
+app.use(morganHelper);
 // routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
