@@ -25,6 +25,7 @@ const addressSchema = new Schema(
         },
         floor: String,
         landmark: String,
+        delivery_fees: { type: Number, required: true },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }

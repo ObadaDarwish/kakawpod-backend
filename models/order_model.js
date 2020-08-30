@@ -20,6 +20,7 @@ const orderSchema = new Schema(
             },
         ],
         status: { type: String, required: true },
+        sub_total: { type: String, required: true },
         total: { type: Number, required: true },
         address_id: { type: Schema.Types.ObjectId, ref: 'Address' },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },

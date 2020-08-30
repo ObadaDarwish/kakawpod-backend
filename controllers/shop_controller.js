@@ -1,11 +1,13 @@
 const Product = require('../models/product_model');
 const User = require('../models/user_model');
 const Order = require('../models/order_model');
+const Address = require('../models/address_model.js');
 const errorHandler = require('../utils/errorHandler');
 
 exports.getMyCart = (req, res, next) => {
     req.user
         .populate('cart.product_id')
+        .populate('cart.box_packaging')
         .populate('cart.items.product_id')
         .execPopulate()
         .then((products) => {
@@ -71,6 +73,7 @@ exports.createOrder = (req, res, next) => {
         const { address_id } = req.body;
         req.user
             .populate('cart.product_id')
+            .populate('cart.box_packaging')
             .execPopulate()
             .then((user) => {
                 if (user.cart.length) {
@@ -79,6 +82,9 @@ exports.createOrder = (req, res, next) => {
                     let orderItems = [...user.cart].map((cartItem) => {
                         cartTotal +=
                             cartItem.product_id.price * cartItem.quantity;
+                        if (cartItem.box_packaging) {
+                            cartTotal += cartItem.box_packaging.price;
+                        }
                         if (cartItem.items.length) {
                             subItems = [...cartItem.items].map((subItem) => {
                                 return {
@@ -94,55 +100,86 @@ exports.createOrder = (req, res, next) => {
                             quantity: cartItem.quantity,
                         };
                     });
-                    let newOrder = new Order({
-                        items: orderItems,
-                        address_id: address_id,
-                        status: 'pending',
-                        total: cartTotal,
+
+                    Address.findOne({
+                        _id: address_id,
                         user_id: req.user._id,
-                    });
-                    newOrder
-                        .save()
-                        .then((order) => {
-                            return req.user.clearCart();
-                        })
-                        .then(() => {
-                            let updateProducts = [];
-                            orderItems.forEach((item) => {
-                                updateProducts.push({
-                                    item_id: item.item_id,
-                                    quantity: item.quantity,
+                    })
+                        .then((address) => {
+                            if (address) {
+                                let newOrder = new Order({
+                                    items: orderItems,
+                                    address_id: address_id,
+                                    status: 'pending',
+                                    sub_total: cartTotal,
+                                    total: cartTotal + address.delivery_fees,
+                                    user_id: req.user._id,
                                 });
-                                if (item.sub_items.length) {
-                                    item.sub_items.forEach((sub_item) => {
-                                        let isFound = updateProducts.findIndex(
-                                            (product) =>
-                                                product.item_id.toString() ===
-                                                sub_item.sub_item_id.toString()
-                                        );
-                                        if (isFound === -1) {
+                                newOrder
+                                    .save()
+                                    .then((order) => {
+                                        return req.user.clearCart();
+                                    })
+                                    .then(() => {
+                                        let updateProducts = [];
+                                        orderItems.forEach((item) => {
                                             updateProducts.push({
-                                                item_id: sub_item.sub_item_id,
-                                                quantity: sub_item.quantity,
+                                                item_id: item.item_id,
+                                                quantity: item.quantity,
                                             });
-                                        } else {
-                                            updateProducts[isFound].quantity +=
-                                                sub_item.quantity;
-                                        }
+                                            if (item.sub_items.length) {
+                                                item.sub_items.forEach(
+                                                    (sub_item) => {
+                                                        let isFound = updateProducts.findIndex(
+                                                            (product) =>
+                                                                product.item_id.toString() ===
+                                                                sub_item.sub_item_id.toString()
+                                                        );
+                                                        if (isFound === -1) {
+                                                            updateProducts.push(
+                                                                {
+                                                                    item_id:
+                                                                        sub_item.sub_item_id,
+                                                                    quantity:
+                                                                        sub_item.quantity,
+                                                                }
+                                                            );
+                                                        } else {
+                                                            updateProducts[
+                                                                isFound
+                                                            ].quantity +=
+                                                                sub_item.quantity;
+                                                        }
+                                                    }
+                                                );
+                                            }
+                                        });
+                                        updateProducts.forEach(
+                                            (item, index) => {
+                                                Product.findById(
+                                                    item.item_id
+                                                ).then((product) => {
+                                                    product.quantity -=
+                                                        item.quantity;
+                                                    product.save();
+                                                });
+                                                if (
+                                                    updateProducts.length ===
+                                                    index + 1
+                                                ) {
+                                                    res.send(
+                                                        'Order saved successfully'
+                                                    );
+                                                }
+                                            }
+                                        );
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).send(err);
                                     });
-                                }
-                            });
-                            updateProducts.forEach((item, index) => {
-                                Product.findById(item.item_id).then(
-                                    (product) => {
-                                        product.quantity -= item.quantity;
-                                        product.save();
-                                    }
-                                );
-                                if (updateProducts.length === index + 1) {
-                                    res.send('Order saved successfully');
-                                }
-                            });
+                            } else {
+                                next(errorHandler('Can not find adderss', 405));
+                            }
                         })
                         .catch((err) => {
                             res.status(500).send(err);

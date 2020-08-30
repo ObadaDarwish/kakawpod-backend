@@ -32,7 +32,7 @@ const userSchema = new Schema(
                         quantity: { type: Number, required: true },
                     },
                 ],
-                packaging_id: {
+                box_packaging: {
                     type: Schema.Types.ObjectId,
                     ref: 'Product',
                 },
@@ -282,7 +282,7 @@ userSchema.methods.addLuxuryBoxToCart = function () {
     if (this.luxury_box.weight === weight) {
         this.cart.push({
             product_id: this.luxury_box.box_id,
-            packaging_id: this.luxury_box.packaging_id,
+            box_packaging: this.luxury_box.box_packaging,
             items: items,
             quantity: 1,
             type: 'luxury box',
