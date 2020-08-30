@@ -221,6 +221,7 @@ exports.getOrders = (req, res, next) => {
                 .limit(10)
                 .populate('items.item_id')
                 .populate('items.sub_items.sub_item_id')
+                .populate('address_id')
                 .exec(function (err, orders) {
                     if (err) {
                         res.status(500).send(err);
