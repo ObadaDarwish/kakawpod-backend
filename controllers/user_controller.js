@@ -260,3 +260,16 @@ exports.getMixBox = (req, res, next) => {
             res.status(500).send(err);
         });
 };
+exports.getLuxuryBox = (req, res, next) => {
+    req.user
+        .populate('luxury_box.items.product_id')
+        .populate('luxury_box.box_id')
+        .populate('luxury_box.box_packaging')
+        .execPopulate()
+        .then((products) => {
+            res.send(products.luxury_box);
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};

@@ -12,4 +12,5 @@ route.post('/verifyEmail', userController.requestEmailVerification);
 route.get('/orders', userController.getOrders);
 route.put('/order', userController.cancelOrder);
 route.get('/mixBox', userController.getMixBox);
+route.get('/luxuryBox', userController.getLuxuryBox);
 module.exports = route;
