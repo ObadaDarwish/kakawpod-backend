@@ -8,7 +8,8 @@ route.post('/cart', shopController.addToCart);
 route.delete('/cart/:code', shopController.removeFromCart);
 route.delete('/cart', shopController.clearCart);
 route.put('/cart/:code', shopController.updateCart);
-
+//validate code
+route.post('/promo', shopController.validateDiscount);
 // orders
 route.post('/order', shopController.createOrder);
 // mix box

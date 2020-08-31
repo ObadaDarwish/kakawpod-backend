@@ -1,6 +1,8 @@
 const Product = require('../models/product_model');
 const Order = require('../models/order_model');
+const Code = require('../models/code_model');
 const moment = require('moment');
+const crypto = require('crypto');
 const errorHandler = require('../utils/errorHandler');
 
 exports.createProduct = (req, res, next) => {
@@ -155,5 +157,26 @@ exports.updateOrder = (req, res, next) => {
         );
     } else {
         next(errorHandler('Not authorized!', 405));
+    }
+};
+
+exports.createCodes = (req, res, next) => {
+    const { no_of_codes, no_of_usage, percentage } = req.body;
+    for (let i = 0; i < no_of_codes; i++) {
+        crypto.randomBytes(3, (err, buf) => {
+            if (!err) {
+                let code = buf.toString('hex');
+                let newCode = new Code({
+                    code: code,
+                    percentage: percentage,
+                    count: no_of_usage,
+                    is_active: true,
+                });
+                newCode.save();
+            }
+        });
+        if (i === no_of_codes - 1) {
+            res.send('Codes has been created successfully');
+        }
     }
 };
