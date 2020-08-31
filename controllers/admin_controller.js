@@ -161,7 +161,7 @@ exports.updateOrder = (req, res, next) => {
 };
 
 exports.createCodes = (req, res, next) => {
-    const { no_of_codes, no_of_usage, percentage } = req.body;
+    const { no_of_codes, no_of_usage, percentage, max_discount } = req.body;
     for (let i = 0; i < no_of_codes; i++) {
         crypto.randomBytes(3, (err, buf) => {
             if (!err) {
@@ -169,6 +169,7 @@ exports.createCodes = (req, res, next) => {
                 let newCode = new Code({
                     code: code,
                     percentage: percentage,
+                    max_discount: max_discount,
                     count: no_of_usage,
                     is_active: true,
                 });

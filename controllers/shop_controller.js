@@ -325,6 +325,9 @@ exports.createOrder = (req, res, next) => {
                                 promoCodeObj = promoCode;
                                 discount =
                                     cartTotal * (promoCode.percentage / 100);
+                                if (discount > promoCode.max_discount) {
+                                    discount = promoCode.max_discount;
+                                }
                             }
 
                             let newOrder = new Order({
@@ -371,7 +374,10 @@ exports.validateDiscount = (req, res, next) => {
     const discount_code = req.body.code;
     validatePromoCode(discount_code, req.user).then((code) => {
         if (code) {
-            res.send({ percentage: code.percentage });
+            res.send({
+                percentage: code.percentage,
+                max_discount: code.max_discount,
+            });
         } else {
             next(errorHandler('Invalid or Expired code', 405));
         }
