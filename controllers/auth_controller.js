@@ -119,7 +119,7 @@ exports.resetPassword = (req, res, next) => {
                                         template_id:
                                             'd-5ce505e731334bafa92cc6da51321334',
                                         dynamic_template_data: {
-                                            forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword/${token}`,
+                                            forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword?token=${token}`,
                                         },
                                     };
                                     sgMail
