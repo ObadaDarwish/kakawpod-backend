@@ -23,6 +23,7 @@ const addressSchema = new Schema(
             type: String,
             required: true,
         },
+        apartment: String,
         floor: String,
         landmark: String,
         delivery_fees: { type: Number, required: true },
