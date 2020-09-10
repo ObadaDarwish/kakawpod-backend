@@ -3,8 +3,7 @@ const Order = require('../models/order_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const sendEmail = require('../utils/email');
 let Address = require('../models/address_model');
 
 exports.getUser = (req, res, next) => {
@@ -182,17 +181,14 @@ exports.requestEmailVerification = (req, res, next) => {
                     user.verify_email_token = token;
                     user.verify_email_token_exp = Date.now() + 3600000;
                     user.save().then(() => {
-                        const msg = {
-                            to: userEmail,
-                            from: 'obada_567@hotmail.co.uk',
-                            subject: 'Verify Email',
-                            template_id: 'd-8d621f33192e456694b5573c8818dd41',
-                            dynamic_template_data: {
-                                verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail/${token}`,
-                            },
-                        };
-                        sgMail
-                            .send(msg)
+                        sendEmail(
+                            userEmail,
+                            'Verify Email',
+                            'd-8d621f33192e456694b5573c8818dd41',
+                            {
+                                verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${token}`,
+                            }
+                        )
                             .then(() => {
                                 res.send('Verify email was successfully sent');
                             })

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sgMail = require('@sendgrid/mail');
 const validator = require('validator');
+const sendEmail = require('../utils/email');
 const errorHandler = require('../utils/errorHandler');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -56,40 +57,62 @@ exports.login = (req, res, next) => {
 exports.signup = (req, res, next) => {
     const { name, email, password } = req.body;
     const isEmailValid = validator.isEmail(email);
+    let EmailToken = '';
     if (isEmailValid) {
         User.findOne({ email: email }).then((user) => {
             if (user) {
                 res.status(405).json({ message: 'Email already exists!' });
             } else {
-                bcryptjs
-                    .hash(password, 12)
-                    .then((hashedPassword) => {
-                        const newUser = new User({
-                            name: name,
-                            email: email,
-                            password: hashedPassword,
-                        });
-                        newUser
-                            .save()
-                            .then((user) => {
-                                let userObj = user.toObject();
-                                delete userObj.password;
-                                jwt.sign(
-                                    userObj,
-                                    process.env.JWT_SECRET,
-                                    function (err, token) {
-                                        res.send({
-                                            user: userObj,
-                                            token: token,
-                                        });
-                                    }
-                                );
+                crypto.randomBytes(32, (err, buf) => {
+                    if (!err) {
+                        EmailToken = buf.toString('hex');
+                        bcryptjs
+                            .hash(password, 12)
+                            .then((hashedPassword) => {
+                                const newUser = new User({
+                                    name: name,
+                                    email: email,
+                                    password: hashedPassword,
+                                    verify_email_token: EmailToken,
+                                    verify_email_token_exp:
+                                        Date.now() + 3600000,
+                                });
+                                newUser
+                                    .save()
+                                    .then((user) => {
+                                        sendEmail(
+                                            email,
+                                            'Verify Email',
+                                            'd-8d621f33192e456694b5573c8818dd41',
+                                            {
+                                                verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${EmailToken}`,
+                                            }
+                                        )
+                                            .then(() => {
+                                                let userObj = user.toObject();
+                                                delete userObj.password;
+                                                jwt.sign(
+                                                    userObj,
+                                                    process.env.JWT_SECRET,
+                                                    function (err, token) {
+                                                        res.send({
+                                                            user: userObj,
+                                                            token: token,
+                                                        });
+                                                    }
+                                                );
+                                            })
+                                            .catch((err) => {
+                                                res.status(500).send(err);
+                                            });
+                                    })
+                                    .catch((err) => {
+                                        res.status(500).send(err);
+                                    });
                             })
-                            .catch((err) => {
-                                res.status(500).send(err);
-                            });
-                    })
-                    .catch((err) => res.status(500).send(err));
+                            .catch((err) => res.status(500).send(err));
+                    }
+                });
             }
         });
     } else {
@@ -112,18 +135,14 @@ exports.resetPassword = (req, res, next) => {
                             user.resetTokenExp = Date.now() + 3600000;
                             user.save()
                                 .then((result) => {
-                                    const msg = {
-                                        to: email,
-                                        from: 'obada_567@hotmail.co.uk',
-                                        subject: 'Resetting password',
-                                        template_id:
-                                            'd-5ce505e731334bafa92cc6da51321334',
-                                        dynamic_template_data: {
+                                    sendEmail(
+                                        email,
+                                        'Resetting password',
+                                        'd-5ce505e731334bafa92cc6da51321334',
+                                        {
                                             forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword?token=${token}`,
-                                        },
-                                    };
-                                    sgMail
-                                        .send(msg)
+                                        }
+                                    )
                                         .then(() => {
                                             res.send(
                                                 'reset password email was successfully sent'
@@ -196,7 +215,7 @@ exports.verifyEmail = (req, res, next) => {
                         res.status(500).send(err);
                     });
             } else {
-                next(errorHandler('Invalid token'));
+                next(errorHandler('Invalid token', 405));
             }
         })
         .catch((err) => {
