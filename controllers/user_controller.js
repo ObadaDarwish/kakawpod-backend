@@ -1,5 +1,6 @@
 const User = require('../models/user_model');
 const Order = require('../models/order_model');
+const Area = require('../models/area_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
@@ -86,25 +87,40 @@ exports.updateProfile = (req, res, next) => {
 
 exports.addAdress = (req, res, next) => {
     const userID = req.user._id;
+    let newAddressId = '';
     Address.find({ user_id: userID })
         .then((users) => {
             if (users.length < 2) {
-                let newAddress = new Address({ ...req.body, user_id: userID });
-                newAddress
-                    .save()
-                    .then(() => {
-                        return User.findById(userID);
-                    })
-                    .then((user) => {
-                        user.shipping_addresses += 1;
-                        return user.save();
-                    })
-                    .then(() => {
-                        res.send('address was added successfully');
-                    })
-                    .catch((err) => {
-                        res.status(500).send(err);
-                    });
+                Area.findOne({ area: req.body.area }).then((area) => {
+                    if (area) {
+                        let newAddress = new Address({
+                            ...req.body,
+                            delivery_fees: area.fee,
+                            user_id: userID,
+                        });
+                        newAddress
+                            .save()
+                            .then((address) => {
+                                newAddressId = address._id;
+                                return User.findById(userID);
+                            })
+                            .then((user) => {
+                                user.shipping_addresses += 1;
+                                return user.save();
+                            })
+                            .then(() => {
+                                res.send({
+                                    message: 'address was added successfully',
+                                    address_id: newAddressId,
+                                });
+                            })
+                            .catch((err) => {
+                                res.status(500).send(err);
+                            });
+                    } else {
+                        next(errorHandler('Area not supported', 405));
+                    }
+                });
             } else {
                 next(
                     errorHandler('only two addresses are allowed per user', 405)
