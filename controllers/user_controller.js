@@ -89,14 +89,15 @@ exports.addAdress = (req, res, next) => {
     const userID = req.user._id;
     let newAddressId = '';
     Address.find({ user_id: userID })
-        .then((users) => {
-            if (users.length < 2) {
+        .then((addresses) => {
+            if (addresses.length < 2) {
                 Area.findOne({ area: req.body.area }).then((area) => {
                     if (area) {
                         let newAddress = new Address({
                             ...req.body,
                             delivery_fees: area.fee,
                             user_id: userID,
+                            primary: addresses.length === 0,
                         });
                         newAddress
                             .save()
@@ -134,22 +135,40 @@ exports.addAdress = (req, res, next) => {
 
 exports.updateAddress = (req, res, next) => {
     const addressID = req.params.code;
-    Address.findOneAndUpdate(
-        { _id: addressID, user_id: req.user._id },
-        req.body,
-        (err, result) => {
-            if (result) {
-                if (!err) {
-                    res.send('address was successfully updated');
+    Address.find({ user_id: req.user._id }).then((addresses) => {
+        if (addresses.length) {
+            addresses.forEach((address, index) => {
+                if (address._id.toString() !== addressID.toString()) {
+                    Address.findOneAndUpdate(
+                        { _id: address._id, user_id: req.user._id },
+                        { primary: !req.body.primary },
+                        (err, result) => {}
+                    );
                 } else {
-                    res.status(500).send(err);
+                    Address.findOneAndUpdate(
+                        { _id: addressID, user_id: req.user._id },
+                        req.body,
+                        (err, result) => {
+                            if (result) {
+                                if (!err) {
+                                    res.send(
+                                        'address was successfully updated'
+                                    );
+                                } else {
+                                    res.status(500).send(err);
+                                }
+                            } else {
+                                next(errorHandler('Not authorized!', 405));
+                            }
+                        }
+                    ).catch((err) => {
+                        res.status(500).send(err);
+                    });
                 }
-            } else {
-                next(errorHandler('Not authorized!', 405));
-            }
+            });
+        } else {
+            next(errorHandler('No address records were found!', 405));
         }
-    ).catch((err) => {
-        res.status(500).send(err);
     });
 };
 exports.deleteAddress = (req, res, next) => {
