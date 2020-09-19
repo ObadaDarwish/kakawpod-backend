@@ -269,6 +269,7 @@ exports.createOrder = (req, res, next) => {
                 updateProducts.forEach((item, index) => {
                     Product.findById(item.item_id).then((product) => {
                         product.quantity -= item.quantity;
+                        product.sold += 1;
                         product.save();
                     });
                     if (updateProducts.length === index + 1) {

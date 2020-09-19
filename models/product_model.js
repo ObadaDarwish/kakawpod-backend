@@ -51,6 +51,7 @@ const productSchema = new Schema(
             type: String,
             required: true,
         },
+        sold: { type: Number, default: 0 },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }
