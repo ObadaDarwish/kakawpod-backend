@@ -12,20 +12,25 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getAllProduct = (req, res, next) => {
-    const { category, chocolate_type, page = 1 } = req.query;
+    const { category, type, page = 1 } = req.query;
     let total = 0;
-    findObj = {};
-    if (category) {
-        findObj.category = category;
-    }
-    if (chocolate_type) {
-        findObj.chocolate_type = chocolate_type;
-    }
-    Product.find(findObj)
+
+    const getObj = () => {
+        findObj = {};
+        if (category) {
+            findObj.category = category;
+        }
+        if (type) {
+            findObj.chocolate_type = type;
+        }
+        return findObj;
+    };
+
+    Product.find(getObj())
         .count()
         .then((totalProducts) => {
             total = totalProducts;
-            Product.find(findObj)
+            Product.find(getObj())
                 .skip((page - 1) * 10)
                 .limit(10)
                 .then((products) => {

@@ -40,22 +40,6 @@ const userSchema = new Schema(
                 type: { type: String, default: 'bar', required: true },
             },
         ],
-        authority: {
-            type: Number,
-            default: 0,
-        },
-        email_verified: {
-            type: Boolean,
-            default: 0,
-        },
-        phone_verified: {
-            type: Boolean,
-            default: 0,
-        },
-        shipping_addresses: {
-            type: Number,
-            default: 0,
-        },
         mix_box: {
             items: [
                 {
@@ -67,6 +51,11 @@ const userSchema = new Schema(
                 type: Schema.Types.ObjectId,
                 ref: 'Product',
             },
+            box_name: {
+                type: String,
+                default: '3 bars',
+            },
+            box_price: Number,
             limit: { type: Number, default: 3 },
         },
         luxury_box: {
@@ -82,6 +71,22 @@ const userSchema = new Schema(
                     quantity: { type: Number, required: true },
                 },
             ],
+        },
+        authority: {
+            type: Number,
+            default: 0,
+        },
+        email_verified: {
+            type: Boolean,
+            default: 0,
+        },
+        phone_verified: {
+            type: Boolean,
+            default: 0,
+        },
+        shipping_addresses: {
+            type: Number,
+            default: 0,
         },
         resetToken: String,
         resetTokenExp: Number,
@@ -185,9 +190,11 @@ userSchema.methods.updateMixBox = function (product_id, qunatity) {
         );
     }
 };
-userSchema.methods.updateMixBoxLimit = function (box_id, limit) {
+userSchema.methods.updateMixBoxLimit = function (box_id, limit, name, price) {
     this.mix_box.box_id = box_id;
     this.mix_box.limit = limit;
+    this.mix_box.box_name = name;
+    this.mix_box.box_price = price;
     return this.save();
 };
 userSchema.methods.addMixBoxToCart = function () {
@@ -206,7 +213,7 @@ userSchema.methods.addMixBoxToCart = function () {
             product_id: this.mix_box.box_id,
             items: items,
             quantity: 1,
-            type: 'mix box',
+            type: 'mixBox',
         });
         return this.save();
     } else {
@@ -285,7 +292,7 @@ userSchema.methods.addLuxuryBoxToCart = function () {
             box_packaging: this.luxury_box.box_packaging,
             items: items,
             quantity: 1,
-            type: 'luxury box',
+            type: 'luxuryBox',
         });
         return this.save();
     } else {

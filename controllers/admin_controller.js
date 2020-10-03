@@ -87,17 +87,21 @@ exports.getOrders = (req, res, next) => {
         end_at = currentDate,
         page = 1,
     } = req.query;
-    findObj = {};
-    findObj.status = status;
-    findObj.createdAt = {
-        $gte: moment.unix(start_at).format(),
-        $lte: moment.unix(end_at).format(),
+
+    const getObj = () => {
+        findObj = {};
+        findObj.status = status;
+        findObj.createdAt = {
+            $gte: moment.unix(start_at).format(),
+            $lte: moment.unix(end_at).format(),
+        };
+        return findObj;
     };
-    Order.find(findObj)
+    Order.find(getObj())
         .count()
         .then((totalOrders) => {
             total = totalOrders;
-            Order.find(findObj)
+            Order.find(getObj())
                 .sort({ createdAt: -1 })
                 .populate([
                     {

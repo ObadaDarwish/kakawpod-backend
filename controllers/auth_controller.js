@@ -1,4 +1,5 @@
 const User = require('../models/user_model');
+const Address = require('../models/address_model');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -30,9 +31,14 @@ exports.login = (req, res, next) => {
                                     userObj,
                                     process.env.JWT_SECRET,
                                     function (err, token) {
-                                        res.send({
-                                            user: userObj,
-                                            token: token,
+                                        Address.find({
+                                            user_id: userObj._id,
+                                        }).then((addresses) => {
+                                            userObj.addresses = addresses;
+                                            res.json({
+                                                user: userObj,
+                                                token: token,
+                                            });
                                         });
                                     }
                                 );

@@ -1,6 +1,7 @@
 const User = require('../models/user_model');
 const Order = require('../models/order_model');
 const Area = require('../models/area_model');
+const Product = require('../models/product_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
@@ -10,15 +11,17 @@ let Address = require('../models/address_model');
 exports.getUser = (req, res, next) => {
     const userID = req.user._id;
     Address.find({ user_id: userID })
-        .then((addresses) => {
-            const userObj = req.user.toObject();
-            delete userObj.password;
-            delete userObj.cart;
-            userObj.addresses = addresses;
-            res.json(userObj);
-        })
-        .catch((err) => {
-            res.status(500).send(err);
+        .populate('delivery_fees_id')
+        .exec(function (err, addresses) {
+            if (err) {
+                res.status(500).send(err);
+            } else {
+                const userObj = req.user.toObject();
+                delete userObj.password;
+                delete userObj.cart;
+                userObj.addresses = addresses;
+                res.json(userObj);
+            }
         });
 };
 
@@ -95,7 +98,7 @@ exports.addAdress = (req, res, next) => {
                     if (area) {
                         let newAddress = new Address({
                             ...req.body,
-                            delivery_fees: area.fee,
+                            delivery_fees_id: area._id,
                             user_id: userID,
                             primary: addresses.length === 0,
                         });
@@ -284,8 +287,32 @@ exports.getMixBox = (req, res, next) => {
     req.user
         .populate('mix_box.items.product_id')
         .execPopulate()
-        .then((products) => {
-            res.send(products.mix_box);
+        .then((user) => {
+            const { box_id } = user.mix_box;
+            if (!box_id) {
+                Product.findOne({
+                    name: '3 bars',
+                    category: 'mixBox',
+                })
+                    .then((box) => {
+                        if (box) {
+                            user.mix_box.limit = 3;
+                            user.mix_box.box_id = box._id;
+                            user.mix_box.box_name = box.name;
+                            user.mix_box.box_price = box.price;
+                            user.save().then(() => {
+                                res.send(user.mix_box);
+                            });
+                        } else {
+                            res.send(user.mix_box);
+                        }
+                    })
+                    .catch((err) => {
+                        res.status(500).send(err);
+                    });
+            } else {
+                res.send(user.mix_box);
+            }
         })
         .catch((err) => {
             res.status(500).send(err);

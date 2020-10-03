@@ -106,18 +106,23 @@ exports.updateMixBox = (req, res, next) => {
 exports.updateMixBoxLimit = (req, res, next) => {
     const { box_id } = req.body;
     try {
-        Product.findOne({ _id: box_id, category: 'mix box' }).then(
-            (product) => {
-                if (product) {
-                    let limit = product.name.replace(' bars', '');
-                    req.user.updateMixBoxLimit(box_id, limit).then(() => {
+        Product.findOne({ _id: box_id, category: 'mixBox' }).then((product) => {
+            if (product) {
+                let limit = product.name.replace(' bars', '');
+                req.user
+                    .updateMixBoxLimit(
+                        box_id,
+                        limit,
+                        product.name,
+                        product.price
+                    )
+                    .then(() => {
                         res.send('Box updated successfully');
                     });
-                } else {
-                    next(errorHandler('Product not found', 405));
-                }
+            } else {
+                next(errorHandler('Product not found', 405));
             }
-        );
+        });
     } catch (err) {
         res.status(405).send({ message: err.message });
     }
@@ -142,7 +147,7 @@ exports.clearMixBox = (req, res, next) => {
 
 exports.addToLuxuryBox = (req, res, next) => {
     const { product_id } = req.body;
-    Product.findOne({ _id: product_id, category: 'mini bar' }).then(
+    Product.findOne({ _id: product_id, category: 'miniBar' }).then(
         (product) => {
             if (product && product.quantity >= 1) {
                 try {
@@ -162,7 +167,7 @@ exports.updateLuxuryBox = (req, res, next) => {
     const { product_id, quantity } = req.body;
     Product.findOne({
         _id: product_id,
-        category: 'mini bar',
+        category: 'miniBar',
     }).then((product) => {
         if (product && product.quantity >= quantity) {
             try {
@@ -181,7 +186,7 @@ exports.updateLuxuryBoxSettings = (req, res, next) => {
     const { box_id, packaging_id } = req.body;
     Product.findOne({
         _id: box_id,
-        category: 'luxury box',
+        category: 'luxuryBox',
     }).then((product) => {
         try {
             req.user.updateLuxuryBoxSettings(product, packaging_id).then(() => {
@@ -216,26 +221,29 @@ exports.createOrder = (req, res, next) => {
         let discount = 0;
         let delivery_fees = 0;
         let promoCodeObj = null;
-        const { address_id, promo_code = null } = req.body;
-        const getItems = (cart) => {
+        const { address_id, promo_code = null, cart } = req.body;
+        const getItems = () => {
             return cart.map((cartItem) => {
-                cartTotal += cartItem.product_id.price * cartItem.quantity;
-                if (cartItem.box_packaging) {
-                    cartTotal += cartItem.box_packaging.price;
-                }
-                if (cartItem.items.length) {
+                cartTotal +=
+                    cartItem.category === 'luxuryBox'
+                        ? cartItem.total
+                        : cartItem.price * cartItem.count;
+                if (cartItem.items && cartItem.items.length) {
                     subItems = [...cartItem.items].map((subItem) => {
                         return {
-                            sub_item_id: subItem.product_id,
-                            quantity: subItem.quantity,
+                            sub_item_id: subItem._id,
+                            quantity: subItem.count,
                         };
                     });
                 }
                 return {
-                    item_id: cartItem.product_id._id,
+                    item_id: cartItem._id,
                     sub_items: subItems,
-                    price: cartItem.product_id.price,
-                    quantity: cartItem.quantity,
+                    price:
+                        cartItem.category === 'luxuryBox'
+                            ? cartItem.total
+                            : cartItem.price,
+                    quantity: cartItem.count,
                 };
             });
         };
@@ -302,74 +310,81 @@ exports.createOrder = (req, res, next) => {
                 });
         };
 
-        req.user
-            .populate('cart.product_id')
-            .populate('cart.box_packaging')
-            .execPopulate()
-            .then((user) => {
-                if (user.cart.length) {
-                    let orderItems = getItems([...user.cart]);
-                    Address.findOne({
-                        _id: address_id,
-                        user_id: req.user._id,
-                    })
-                        .then((address) => {
-                            if (address) {
-                                delivery_fees = address.delivery_fees;
-                                return validatePromoCode(promo_code, req.user);
-                            } else {
-                                next(errorHandler('Can not find address', 405));
-                            }
-                        })
-                        .then((promoCode) => {
-                            if (promoCode) {
-                                promoCodeObj = promoCode;
-                                discount =
-                                    cartTotal * (promoCode.percentage / 100);
-                                if (discount > promoCode.max_discount) {
-                                    discount = promoCode.max_discount;
-                                }
-                            }
-
-                            let newOrder = new Order({
-                                items: orderItems,
-                                address_id: address_id,
-                                status: 'pending',
-                                sub_total: cartTotal,
-                                discount: discount,
-                                total: cartTotal - discount + delivery_fees,
-                                user_id: req.user._id,
-                            });
-                            newOrder
-                                .save()
-                                .then((order) => {
-                                    return req.user.clearCart();
-                                })
-                                .then(() => {
-                                    updateProducts(orderItems, promoCodeObj);
+        if (cart.length) {
+            let orderItems = getItems();
+            Address.findOne({
+                _id: address_id,
+                user_id: req.user._id,
+            })
+                .populate('delivery_fees_id')
+                .exec(function (err, address) {
+                    if (err) {
+                        res.status(500).send(err);
+                    } else {
+                        if (address) {
+                            delivery_fees = address.delivery_fees_id.fee;
+                            validatePromoCode(promo_code, req.user)
+                                .then((promoCode) => {
+                                    if (promoCode) {
+                                        promoCodeObj = promoCode;
+                                        discount =
+                                            cartTotal *
+                                            (promoCode.percentage / 100);
+                                        if (discount > promoCode.max_discount) {
+                                            discount = promoCode.max_discount;
+                                        }
+                                    }
+                                    let newOrder = new Order({
+                                        items: orderItems,
+                                        address_id: address_id,
+                                        status: 'pending',
+                                        sub_total: cartTotal,
+                                        discount: discount,
+                                        total: Math.floor(
+                                            cartTotal - discount + delivery_fees
+                                        ),
+                                        user_id: req.user._id,
+                                    });
+                                    newOrder
+                                        .save()
+                                        .then(() => {
+                                            updateProducts(
+                                                orderItems,
+                                                promoCodeObj
+                                            );
+                                        })
+                                        .catch((err) => {
+                                            res.status(500).send(err);
+                                        });
                                 })
                                 .catch((err) => {
                                     res.status(500).send(err);
                                 });
-                        })
-                        .catch((err) => {
-                            res.status(500).send(err);
-                        });
-                } else {
-                    next(errorHandler('cart is empty', 405));
-                }
-            });
+                        } else {
+                            next(errorHandler('Can not find address', 405));
+                        }
+                    }
+                });
+        } else {
+            next(errorHandler('cart is empty', 405));
+        }
     } else {
         next(errorHandler('address id is required', 405));
     }
 };
 const validatePromoCode = (code, user) => {
-    return Code.findOne({
-        code: code.toLowerCase(),
-        is_active: true,
-        count: { $gt: 0 },
-        users: { $nin: [user._id] },
-    });
+    if (code) {
+        return Code.findOne({
+            code: code.toLowerCase(),
+            is_active: true,
+            count: { $gt: 0 },
+            users: { $nin: [user._id] },
+        });
+    } else {
+        return new Promise((resolve) => {
+            resolve(null);
+        });
+    }
 };
 exports.validateDiscount = (req, res, next) => {
     const discount_code = req.body.code;

@@ -26,7 +26,7 @@ const addressSchema = new Schema(
         apartment: String,
         floor: String,
         landmark: String,
-        delivery_fees: { type: Number, required: true },
+        delivery_fees_id: { type: Schema.Types.ObjectId, ref: 'Area' },
         primary: { type: Boolean, required: true, default: false },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
