@@ -26,7 +26,7 @@ exports.getUser = (req, res, next) => {
 };
 
 exports.updateProfile = (req, res, next) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     User.findById(req.user._id)
         .then((user) => {
             if (user) {
@@ -38,6 +38,7 @@ exports.updateProfile = (req, res, next) => {
                                 .then((match) => {
                                     if (match) {
                                         user.email = email;
+                                        user.email_verified = false;
                                         resolve();
                                     } else {
                                         next(
@@ -63,6 +64,10 @@ exports.updateProfile = (req, res, next) => {
                     if (name !== user.name) {
                         user.name = name;
                     }
+                    if (phone !== user.phone) {
+                        user.phone = phone;
+                        user.phone_verified = false;
+                    }
                     resolve();
                 });
 
@@ -70,7 +75,9 @@ exports.updateProfile = (req, res, next) => {
                     .then(() => {
                         user.save()
                             .then(() => {
-                                res.send('profile updated successfully');
+                                let userObj = user.toObject();
+                                delete userObj.password;
+                                res.send(userObj);
                             })
                             .catch((err) => {
                                 res.status(500).send(err);
@@ -241,7 +248,46 @@ exports.requestEmailVerification = (req, res, next) => {
             res.status(500).send(err);
         });
 };
-
+exports.requestPhoneVerification = (req, res, next) => {
+    const userID = req.user._id;
+    const { phone } = req.body;
+    User.findById(userID)
+        .then((user) => {
+            user.phone = phone;
+            user.verify_phone_code = Math.floor(Math.random() * 1000000);
+            user.verify_phone_code_exp = Date.now() + 3600000;
+            user.save().then(() => {
+                res.send('phone verification code generated');
+            });
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
+exports.PhoneVerification = (req, res, next) => {
+    const userID = req.user._id;
+    const { code } = req.body;
+    User.findOne({
+        _id: userID,
+        verify_phone_code: code,
+        verify_phone_code_exp: { $gt: Date.now() },
+    })
+        .then((user) => {
+            if (user) {
+                user.phone_verified = true;
+                user.verify_phone_code = null;
+                user.verify_phone_code_exp = null;
+                user.save().then(() => {
+                    res.send('phone verified successfully');
+                });
+            } else {
+                next(errorHandler('Invalid or expired code', 405));
+            }
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
 exports.getOrders = (req, res, next) => {
     const { page = 1 } = req.query;
     let total = 0;

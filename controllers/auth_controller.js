@@ -97,16 +97,21 @@ exports.signup = (req, res, next) => {
                                             .then(() => {
                                                 let userObj = user.toObject();
                                                 delete userObj.password;
-                                                jwt.sign(
-                                                    userObj,
-                                                    process.env.JWT_SECRET,
-                                                    function (err, token) {
-                                                        res.send({
-                                                            user: userObj,
-                                                            token: token,
-                                                        });
-                                                    }
-                                                );
+                                                Address.find({
+                                                    user_id: userObj._id,
+                                                }).then((addresses) => {
+                                                    userObj.addresses = addresses;
+                                                    jwt.sign(
+                                                        userObj,
+                                                        process.env.JWT_SECRET,
+                                                        function (err, token) {
+                                                            res.send({
+                                                                user: userObj,
+                                                                token: token,
+                                                            });
+                                                        }
+                                                    );
+                                                });
                                             })
                                             .catch((err) => {
                                                 res.status(500).send(err);

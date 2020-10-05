@@ -14,7 +14,7 @@ const userSchema = new Schema(
             dropDups: true,
         },
         phone: {
-            type: Number,
+            type: String,
         },
         password: {
             type: String,
@@ -92,6 +92,8 @@ const userSchema = new Schema(
         resetTokenExp: Number,
         verify_email_token: String,
         verify_email_token_exp: Number,
+        verify_phone_code: Number,
+        verify_phone_code_exp: Number,
     },
     { timestamps: true }
 );

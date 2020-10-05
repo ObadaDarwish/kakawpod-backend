@@ -10,7 +10,18 @@ exports.getProduct = (req, res, next) => {
             res.status(500).send(err);
         });
 };
-
+exports.getTopSellingProducts = (req, res, next) => {
+    Product.find({ $or: [{ category: 'bar' }, { category: 'cooking' }] })
+        .sort({ sold: -1 })
+        .limit(10)
+        .exec(function (err, products) {
+            if (err) {
+                res.status(500).send(err);
+            } else {
+                return res.send(products);
+            }
+        });
+};
 exports.getAllProduct = (req, res, next) => {
     const { category, type, page = 1 } = req.query;
     let total = 0;

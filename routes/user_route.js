@@ -9,6 +9,8 @@ route.post('/address', userController.addAdress);
 route.put('/address/:code', userController.updateAddress);
 route.delete('/address/:code', userController.deleteAddress);
 route.post('/verifyEmail', userController.requestEmailVerification);
+route.post('/requestVerifyPhone', userController.requestPhoneVerification);
+route.post('/verifyPhone', userController.PhoneVerification);
 route.get('/orders', userController.getOrders);
 route.put('/order', userController.cancelOrder);
 route.get('/mixBox', userController.getMixBox);
