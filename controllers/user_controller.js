@@ -6,6 +6,7 @@ const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
 const sendEmail = require('../utils/email');
+const { filterUser } = require('../utils/user');
 let Address = require('../models/address_model');
 
 exports.getUser = (req, res, next) => {
@@ -16,9 +17,7 @@ exports.getUser = (req, res, next) => {
             if (err) {
                 res.status(500).send(err);
             } else {
-                const userObj = req.user.toObject();
-                delete userObj.password;
-                delete userObj.cart;
+                const userObj = filterUser(req.user);
                 userObj.addresses = addresses;
                 res.json(userObj);
             }
@@ -75,8 +74,7 @@ exports.updateProfile = (req, res, next) => {
                     .then(() => {
                         user.save()
                             .then(() => {
-                                let userObj = user.toObject();
-                                delete userObj.password;
+                                let userObj = filterUser(user);
                                 res.send(userObj);
                             })
                             .catch((err) => {
@@ -123,6 +121,7 @@ exports.addAdress = (req, res, next) => {
                                 res.send({
                                     message: 'address was added successfully',
                                     address_id: newAddressId,
+                                    area: area,
                                 });
                             })
                             .catch((err) => {
@@ -253,12 +252,32 @@ exports.requestPhoneVerification = (req, res, next) => {
     const { phone } = req.body;
     User.findById(userID)
         .then((user) => {
-            user.phone = phone;
-            user.verify_phone_code = Math.floor(Math.random() * 1000000);
-            user.verify_phone_code_exp = Date.now() + 3600000;
-            user.save().then(() => {
-                res.send('phone verification code generated');
-            });
+            if (user) {
+                if (
+                    (user.phone_verification_count < 3 &&
+                        user.phone_verification_can_update_at >= Date.now()) ||
+                    !user.phone_verification_count
+                ) {
+                    user.phone = phone;
+                    user.verify_phone_code = Math.floor(
+                        Math.random() * 1000000
+                    );
+                    user.verify_phone_code_exp = Date.now() + 3600000;
+                    user.phone_verification_count += 1;
+                    user.phone_verification_can_update_at =
+                        Date.now() + 86400000;
+                    user.save().then(() => {
+                        res.send('phone verification code generated');
+                    });
+                } else {
+                    next(
+                        errorHandler(
+                            'reached max limit, please wait 24 hours before trying again',
+                            405
+                        )
+                    );
+                }
+            }
         })
         .catch((err) => {
             res.status(500).send(err);
@@ -277,6 +296,8 @@ exports.PhoneVerification = (req, res, next) => {
                 user.phone_verified = true;
                 user.verify_phone_code = null;
                 user.verify_phone_code_exp = null;
+                user.phone_verification_count = 0;
+                user.phone_verification_can_update_at = null;
                 user.save().then(() => {
                     res.send('phone verified successfully');
                 });

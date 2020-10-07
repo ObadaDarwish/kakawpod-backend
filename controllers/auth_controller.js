@@ -1,3 +1,4 @@
+const { filterUser } = require('../utils/user');
 const User = require('../models/user_model');
 const Address = require('../models/address_model');
 const bcryptjs = require('bcryptjs');
@@ -25,8 +26,7 @@ exports.login = (req, res, next) => {
                         .compare(password, user.password)
                         .then((match) => {
                             if (match) {
-                                let userObj = user.toObject();
-                                delete userObj.password;
+                                let userObj = filterUser(user);
                                 jwt.sign(
                                     userObj,
                                     process.env.JWT_SECRET,
@@ -95,8 +95,7 @@ exports.signup = (req, res, next) => {
                                             }
                                         )
                                             .then(() => {
-                                                let userObj = user.toObject();
-                                                delete userObj.password;
+                                                let userObj = filterUser(user);
                                                 Address.find({
                                                     user_id: userObj._id,
                                                 }).then((addresses) => {

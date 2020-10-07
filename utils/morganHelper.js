@@ -8,9 +8,9 @@ const accessLogStream = fs.createWriteStream(
         __dirname,
         '..',
         'logs',
-        `logs-${date.getDate()}-${
-            date.getMonth() + 1
-        }-${date.getFullYear()}.log`
+        `${date.getFullYear()}`,
+        `${date.getMonth() + 1}`,
+        `Day-${date.getDate()}.log`
     ),
     {
         flags: 'a',

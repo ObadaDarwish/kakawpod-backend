@@ -13,6 +13,6 @@ route.post('/requestVerifyPhone', userController.requestPhoneVerification);
 route.post('/verifyPhone', userController.PhoneVerification);
 route.get('/orders', userController.getOrders);
 route.put('/order', userController.cancelOrder);
-route.get('/mixBox', userController.getMixBox);
-route.get('/luxuryBox', userController.getLuxuryBox);
+// route.get('/mixBox', userController.getMixBox);
+// route.get('/luxuryBox', userController.getLuxuryBox);
 module.exports = route;

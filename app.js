@@ -26,7 +26,15 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 app.use(morgan('dev'));
-
+app.use((req, res, next) => {
+    //create path for logs
+    let date = new Date();
+    let path = `./logs/${date.getFullYear()}/${date.getMonth() + 1}`;
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+    }
+    next();
+});
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -50,7 +58,6 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
-    console.log('global error handler');
     res.status(err.statusCode).send({ message: err.message });
 });
 

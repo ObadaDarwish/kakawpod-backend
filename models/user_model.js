@@ -94,6 +94,8 @@ const userSchema = new Schema(
         verify_email_token_exp: Number,
         verify_phone_code: Number,
         verify_phone_code_exp: Number,
+        phone_verification_count: { type: Number, default: 0 },
+        phone_verification_can_update_at: Number,
     },
     { timestamps: true }
 );
