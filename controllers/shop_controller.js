@@ -218,13 +218,13 @@ exports.createOrder = (req, res, next) => {
     if (req.user.phone_verified) {
         if (req.body && req.body.address_id) {
             let cartTotal = 0;
-            let subItems = [];
             let discount = 0;
             let delivery_fees = 0;
             let promoCodeObj = null;
             const { address_id, promo_code = null, cart } = req.body;
             const getItems = () => {
                 return cart.map((cartItem) => {
+                    let subItems = [];
                     cartTotal +=
                         cartItem.category === 'luxuryBox'
                             ? cartItem.total
@@ -340,6 +340,10 @@ exports.createOrder = (req, res, next) => {
                                             }
                                         }
                                         let newOrder = new Order({
+                                            order_id:
+                                                req.user.name
+                                                    .substr(0, 2)
+                                                    .toUpperCase() + Date.now(),
                                             items: orderItems,
                                             address_id: address_id,
                                             status: 'pending',

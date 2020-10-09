@@ -3,6 +3,7 @@ const Schema = mongoose.Schema;
 
 const orderSchema = new Schema(
     {
+        order_id: String,
         items: [
             {
                 item_id: { type: Schema.Types.ObjectId, ref: 'Product' },
