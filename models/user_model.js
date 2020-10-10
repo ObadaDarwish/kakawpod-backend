@@ -88,6 +88,12 @@ const userSchema = new Schema(
             type: Number,
             default: 0,
         },
+        samples: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: 'Product',
+            },
+        ],
         resetToken: String,
         resetTokenExp: Number,
         verify_email_token: String,
@@ -99,6 +105,14 @@ const userSchema = new Schema(
     },
     { timestamps: true }
 );
+userSchema.methods.updateSampleList = function (products) {
+    let newSamples = [...this.samples];
+    products.forEach((sample) => {
+        newSamples.push(sample._id);
+    });
+    this.samples = newSamples;
+    return this.save();
+};
 userSchema.methods.addToCart = function (product) {
     this.cart = addItem(product, this.cart);
     return this.save();

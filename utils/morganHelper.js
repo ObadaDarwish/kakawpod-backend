@@ -20,10 +20,10 @@ const accessLogStream = fs.createWriteStream(
 module.exports = morgan(
     function (tokens, req, res) {
         return [
+            tokens.status(req, res),
             tokens.date('clf'),
             tokens.method(req, res),
             tokens.url(req, res),
-            tokens.status(req, res),
             tokens.res(req, res, 'content-length'),
             '-',
             tokens['response-time'](req, res),

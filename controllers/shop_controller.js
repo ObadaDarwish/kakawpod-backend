@@ -4,6 +4,7 @@ const Order = require('../models/order_model');
 const Address = require('../models/address_model.js');
 const Code = require('../models/code_model');
 const bcryptjs = require('bcryptjs');
+const mongoose = require('mongoose');
 const errorHandler = require('../utils/errorHandler');
 
 exports.getMyCart = (req, res, next) => {
@@ -221,6 +222,8 @@ exports.createOrder = (req, res, next) => {
             let discount = 0;
             let delivery_fees = 0;
             let promoCodeObj = null;
+            let outOfStockProducts = [];
+            let samplesList = [];
             const { address_id, promo_code = null, cart } = req.body;
             const getItems = () => {
                 return cart.map((cartItem) => {
@@ -304,81 +307,179 @@ exports.createOrder = (req, res, next) => {
                 });
                 Promise.all([updateProductsPromise, updateCodePromise])
                     .then(() => {
-                        res.send('Ordered has been submitted successfully');
+                        req.user
+                            .updateSampleList(samplesList)
+                            .then(() => {
+                                res.send(
+                                    'Ordered has been submitted successfully'
+                                );
+                            })
+                            .catch((err) => {
+                                next(errorHandler(err.message, 405));
+                            });
                     })
                     .catch((err) => {
-                        next(errorHandler(err, 405));
+                        next(errorHandler(err.message, 405));
                     });
             };
-
-            if (cart.length) {
-                let orderItems = getItems();
-                Address.findOne({
-                    _id: address_id,
-                    user_id: req.user._id,
-                })
-                    .populate('delivery_fees_id')
-                    .exec(function (err, address) {
-                        if (err) {
-                            res.status(500).send(err);
+            const checkInStock = (cart) => {
+                let cartProducts = cart.map((item) => {
+                    return mongoose.Types.ObjectId(item._id);
+                });
+                const getProductCount = (id) => {
+                    let findProduct = cart.findIndex(
+                        (item) => item._id === id.toString()
+                    );
+                    return cart[findProduct].count;
+                };
+                let checkStockPromise = new Promise((resolve, reject) => {
+                    Product.find({ _id: { $in: cartProducts } }).then(
+                        (products) => {
+                            products.forEach((product, index) => {
+                                if (
+                                    product.quantity <
+                                    getProductCount(product._id)
+                                ) {
+                                    reject({ type: 'stock' });
+                                    outOfStockProducts.push(product);
+                                }
+                                if (products.length === index + 1) {
+                                    resolve();
+                                }
+                            });
+                        }
+                    );
+                });
+                return checkStockPromise;
+            };
+            const checkSampleAvailability = (samples) => {
+                let sampleAvailabilityPromise = new Promise(
+                    (resolve, reject) => {
+                        samplesList = samples.filter(
+                            (sample) => sample.category === 'sample'
+                        );
+                        if (samplesList.length) {
+                            samplesList.forEach((sample, index) => {
+                                let isSampleFound = req.user.samples.findIndex(
+                                    (item) =>
+                                        item.toString() ===
+                                        sample._id.toString()
+                                );
+                                if (isSampleFound >= 0) {
+                                    reject({ type: 'sample' });
+                                }
+                                if (index + 1 === samplesList.length) {
+                                    resolve();
+                                }
+                            });
                         } else {
-                            if (address) {
-                                delivery_fees = address.delivery_fees_id.fee;
-                                validatePromoCode(promo_code, req.user)
-                                    .then((promoCode) => {
-                                        if (promoCode) {
-                                            promoCodeObj = promoCode;
-                                            discount =
-                                                cartTotal *
-                                                (promoCode.percentage / 100);
-                                            if (
-                                                discount >
-                                                promoCode.max_discount
-                                            ) {
-                                                discount =
-                                                    promoCode.max_discount;
-                                            }
-                                        }
-                                        let newOrder = new Order({
-                                            order_id:
-                                                req.user.name
-                                                    .substr(0, 2)
-                                                    .toUpperCase() + Date.now(),
-                                            items: orderItems,
-                                            address_id: address_id,
-                                            status: 'pending',
-                                            sub_total: cartTotal,
-                                            discount: discount,
-                                            total: Math.floor(
-                                                cartTotal -
-                                                    discount +
-                                                    delivery_fees
-                                            ),
-                                            user_id: req.user._id,
-                                        });
-                                        newOrder
-                                            .save()
-                                            .then(() => {
-                                                updateProducts(
-                                                    orderItems,
-                                                    promoCodeObj
-                                                );
+                            resolve();
+                        }
+                    }
+                );
+                return sampleAvailabilityPromise;
+            };
+
+            checkSampleAvailability(req.body.cart)
+                .then(() => {
+                    return checkInStock(req.body.cart);
+                })
+                .then(() => {
+                    if (cart.length) {
+                        let orderItems = getItems();
+                        Address.findOne({
+                            _id: address_id,
+                            user_id: req.user._id,
+                        })
+                            .populate('delivery_fees_id')
+                            .exec(function (err, address) {
+                                if (err) {
+                                    res.status(500).send(err);
+                                } else {
+                                    if (address) {
+                                        delivery_fees =
+                                            address.delivery_fees_id.fee;
+                                        validatePromoCode(promo_code, req.user)
+                                            .then((promoCode) => {
+                                                if (promoCode) {
+                                                    promoCodeObj = promoCode;
+                                                    discount =
+                                                        cartTotal *
+                                                        (promoCode.percentage /
+                                                            100);
+                                                    if (
+                                                        discount >
+                                                        promoCode.max_discount
+                                                    ) {
+                                                        discount =
+                                                            promoCode.max_discount;
+                                                    }
+                                                }
+                                                let newOrder = new Order({
+                                                    order_id:
+                                                        req.user.name
+                                                            .substr(0, 2)
+                                                            .toUpperCase() +
+                                                        Date.now(),
+                                                    items: orderItems,
+                                                    address_id: address_id,
+                                                    status: 'pending',
+                                                    sub_total: cartTotal,
+                                                    discount: discount,
+                                                    total: Math.floor(
+                                                        cartTotal -
+                                                            discount +
+                                                            delivery_fees
+                                                    ),
+                                                    user_id: req.user._id,
+                                                });
+                                                newOrder
+                                                    .save()
+                                                    .then(() => {
+                                                        updateProducts(
+                                                            orderItems,
+                                                            promoCodeObj
+                                                        );
+                                                    })
+                                                    .catch((err) => {
+                                                        res.status(500).send(
+                                                            err
+                                                        );
+                                                    });
                                             })
                                             .catch((err) => {
                                                 res.status(500).send(err);
                                             });
-                                    })
-                                    .catch((err) => {
-                                        res.status(500).send(err);
-                                    });
-                            } else {
-                                next(errorHandler('Can not find address', 405));
-                            }
-                        }
-                    });
-            } else {
-                next(errorHandler('cart is empty', 405));
-            }
+                                    } else {
+                                        next(
+                                            errorHandler(
+                                                'Can not find address',
+                                                405
+                                            )
+                                        );
+                                    }
+                                }
+                            });
+                    } else {
+                        next(errorHandler('cart is empty', 405));
+                    }
+                })
+                .catch((err) => {
+                    if (err.type === 'stock') {
+                        res.status(405).send({
+                            message: 'Out of stock',
+                            data: outOfStockProducts,
+                        });
+                    }
+                    if (err.type === 'sample') {
+                        next(
+                            errorHandler(
+                                'one sample of each type is allowed',
+                                405
+                            )
+                        );
+                    }
+                });
         } else {
             next(errorHandler('address id is required', 405));
         }
