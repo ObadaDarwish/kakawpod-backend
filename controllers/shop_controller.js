@@ -224,14 +224,15 @@ exports.createOrder = (req, res, next) => {
             let promoCodeObj = null;
             let outOfStockProducts = [];
             let samplesList = [];
+            let cartProducts = [];
             const { address_id, promo_code = null, cart } = req.body;
             const getItems = () => {
                 return cart.map((cartItem) => {
                     let subItems = [];
                     cartTotal +=
-                        cartItem.category === 'luxuryBox'
+                        (cartItem.category === 'luxuryBox'
                             ? cartItem.total
-                            : cartItem.price * cartItem.count;
+                            : cartItem.price) * cartItem.count;
                     if (cartItem.items && cartItem.items.length) {
                         subItems = [...cartItem.items].map((subItem) => {
                             return {
@@ -255,11 +256,22 @@ exports.createOrder = (req, res, next) => {
                 let updateProducts = [];
                 let updateProductsPromise = new Promise((resolve, reject) => {
                     orderItems.forEach((item) => {
-                        updateProducts.push({
-                            item_id: item.item_id,
-                            quantity: item.quantity,
-                        });
-                        if (item.sub_items.length) {
+                        let isItemFound = updateProducts.findIndex(
+                            (product) =>
+                                product.item_id.toString() ===
+                                item.item_id.toString()
+                        );
+                        if (isItemFound === -1) {
+                            updateProducts.push({
+                                item_id: item.item_id,
+                                quantity: item.quantity,
+                            });
+                        } else {
+                            updateProducts[isItemFound].quantity +=
+                                item.quantity;
+                        }
+
+                        if (item.sub_items && item.sub_items.length) {
                             item.sub_items.forEach((sub_item) => {
                                 let isFound = updateProducts.findIndex(
                                     (product) =>
@@ -323,17 +335,40 @@ exports.createOrder = (req, res, next) => {
                     });
             };
             const checkInStock = (cart) => {
-                let cartProducts = cart.map((item) => {
-                    return mongoose.Types.ObjectId(item._id);
+                const updateCartArray = (item) => {
+                    let isFound = cartProducts.findIndex(
+                        (product) =>
+                            product._id.toString() === item._id.toString()
+                    );
+                    if (isFound === -1) {
+                        cartProducts.push({
+                            mongoId: mongoose.Types.ObjectId(item._id),
+                            _id: item._id,
+                            count: item.count,
+                        });
+                    } else {
+                        cartProducts[isFound].count += item.count;
+                    }
+                };
+                cart.forEach((item) => {
+                    updateCartArray(item);
+                    if (item.items && item.items.length) {
+                        item.items.forEach((sub_item) => {
+                            updateCartArray(sub_item);
+                        });
+                    }
                 });
                 const getProductCount = (id) => {
-                    let findProduct = cart.findIndex(
+                    let findProduct = cartProducts.findIndex(
                         (item) => item._id === id.toString()
                     );
-                    return cart[findProduct].count;
+                    return cartProducts[findProduct].count;
                 };
                 let checkStockPromise = new Promise((resolve, reject) => {
-                    Product.find({ _id: { $in: cartProducts } }).then(
+                    let cartProductMongoIds = cartProducts.map((item) => {
+                        return item.mongoId;
+                    });
+                    Product.find({ _id: { $in: cartProductMongoIds } }).then(
                         (products) => {
                             products.forEach((product, index) => {
                                 if (
