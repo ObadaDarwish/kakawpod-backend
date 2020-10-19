@@ -2,6 +2,7 @@ const User = require('../models/user_model');
 const Order = require('../models/order_model');
 const Area = require('../models/area_model');
 const Product = require('../models/product_model');
+const Contact = require('../models/contact_model');
 const errorHandler = require('../utils/errorHandler');
 const bcryptjs = require('bcryptjs');
 const crypto = require('crypto');
@@ -396,5 +397,17 @@ exports.getLuxuryBox = (req, res, next) => {
         })
         .catch((err) => {
             res.status(500).send(err);
+        });
+};
+
+exports.contact = (req, res, next) => {
+    let newMessage = new Contact(req.body);
+    newMessage
+        .save()
+        .then(() => {
+            res.send('message sent successfully');
+        })
+        .catch((err) => {
+            next(errorHandler(err.message, 405));
         });
 };
