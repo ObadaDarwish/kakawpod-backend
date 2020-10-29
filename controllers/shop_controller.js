@@ -466,6 +466,7 @@ exports.createOrder = (req, res, next) => {
                                                             discount +
                                                             delivery_fees
                                                     ),
+                                                    order_type: 'online',
                                                     user_id: req.user._id,
                                                 });
                                                 newOrder

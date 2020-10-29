@@ -25,6 +25,7 @@ const orderSchema = new Schema(
         discount: { type: Number, default: 0, required: true },
         total: { type: Number, required: true },
         address_id: { type: Schema.Types.ObjectId, ref: 'Address' },
+        order_type: { type: String, default: 'online' },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true }
