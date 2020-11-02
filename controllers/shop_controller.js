@@ -1,10 +1,7 @@
 const Product = require('../models/product_model');
-const User = require('../models/user_model');
 const Order = require('../models/order_model');
 const Address = require('../models/address_model.js');
 const Code = require('../models/code_model');
-const bcryptjs = require('bcryptjs');
-const mongoose = require('mongoose');
 const errorHandler = require('../utils/errorHandler');
 const {
     checkInStock,
