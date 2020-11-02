@@ -14,5 +14,5 @@ route.post('/codes', isAdmin, admincontroller.createCodes);
 // employee
 route.get('/orders', isEmployee_Admin, admincontroller.getOrders);
 route.put('/order/:code', isEmployee_Admin, admincontroller.updateOrder);
-
+route.post('/pos', isEmployee_Admin, admincontroller.createOrder);
 module.exports = route;

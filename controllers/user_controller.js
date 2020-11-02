@@ -313,7 +313,7 @@ exports.PhoneVerification = (req, res, next) => {
 exports.getOrders = (req, res, next) => {
     const { page = 1 } = req.query;
     let total = 0;
-    Order.find({ user_id: req.user._id })
+    Order.find({ user_id: req.user._id, order_type: 'online' })
         .count()
         .then((count) => {
             total = count;

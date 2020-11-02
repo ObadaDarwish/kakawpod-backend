@@ -6,6 +6,11 @@ const Code = require('../models/code_model');
 const bcryptjs = require('bcryptjs');
 const mongoose = require('mongoose');
 const errorHandler = require('../utils/errorHandler');
+const {
+    checkInStock,
+    updateProducts,
+    getItems,
+} = require('./order_controller');
 
 exports.getMyCart = (req, res, next) => {
     req.user
@@ -218,175 +223,13 @@ exports.addLuxuryBoxToCart = (req, res, next) => {
 exports.createOrder = (req, res, next) => {
     if (req.user.phone_verified) {
         if (req.body && req.body.address_id) {
-            let cartTotal = 0;
             let discount = 0;
             let delivery_fees = 0;
             let promoCodeObj = null;
-            let outOfStockProducts = [];
             let samplesList = [];
-            let cartProducts = [];
-            const { address_id, promo_code = null, cart } = req.body;
-            const getItems = () => {
-                return cart.map((cartItem) => {
-                    let subItems = [];
-                    cartTotal +=
-                        (cartItem.category === 'luxuryBox'
-                            ? cartItem.total
-                            : cartItem.price) * cartItem.count;
-                    if (cartItem.items && cartItem.items.length) {
-                        subItems = [...cartItem.items].map((subItem) => {
-                            return {
-                                sub_item_id: subItem._id,
-                                quantity: subItem.count,
-                            };
-                        });
-                    }
-                    return {
-                        item_id: cartItem._id,
-                        sub_items: subItems,
-                        price:
-                            cartItem.category === 'luxuryBox'
-                                ? cartItem.total
-                                : cartItem.price,
-                        quantity: cartItem.count,
-                    };
-                });
-            };
-            const updateProducts = (orderItems, promoCodeObj) => {
-                let updateProducts = [];
-                let updateProductsPromise = new Promise((resolve, reject) => {
-                    orderItems.forEach((item) => {
-                        let isItemFound = updateProducts.findIndex(
-                            (product) =>
-                                product.item_id.toString() ===
-                                item.item_id.toString()
-                        );
-                        if (isItemFound === -1) {
-                            updateProducts.push({
-                                item_id: item.item_id,
-                                quantity: item.quantity,
-                            });
-                        } else {
-                            updateProducts[isItemFound].quantity +=
-                                item.quantity;
-                        }
 
-                        if (item.sub_items && item.sub_items.length) {
-                            item.sub_items.forEach((sub_item) => {
-                                let isFound = updateProducts.findIndex(
-                                    (product) =>
-                                        product.item_id.toString() ===
-                                        sub_item.sub_item_id.toString()
-                                );
-                                if (isFound === -1) {
-                                    updateProducts.push({
-                                        item_id: sub_item.sub_item_id,
-                                        quantity: sub_item.quantity,
-                                    });
-                                } else {
-                                    updateProducts[isFound].quantity +=
-                                        sub_item.quantity;
-                                }
-                            });
-                        }
-                    });
-                    updateProducts.forEach((item, index) => {
-                        Product.findById(item.item_id).then((product) => {
-                            product.quantity -= item.quantity;
-                            product.sold += item.quantity;
-                            product.save();
-                        });
-                        if (updateProducts.length === index + 1) {
-                            resolve();
-                        }
-                    });
-                });
-                let updateCodePromise = new Promise((resolve, reject) => {
-                    if (promoCodeObj) {
-                        Code.findOne({
-                            code: promoCodeObj.code,
-                        }).then((code) => {
-                            let currentUsers = code.users;
-                            currentUsers.push(req.user._id);
-                            code.users = currentUsers;
-                            code.count -= 1;
-                            code.save();
-                            resolve();
-                        });
-                    } else {
-                        resolve();
-                    }
-                });
-                Promise.all([updateProductsPromise, updateCodePromise])
-                    .then(() => {
-                        req.user
-                            .updateSampleList(samplesList)
-                            .then(() => {
-                                res.send(
-                                    'Ordered has been submitted successfully'
-                                );
-                            })
-                            .catch((err) => {
-                                next(errorHandler(err.message, 405));
-                            });
-                    })
-                    .catch((err) => {
-                        next(errorHandler(err.message, 405));
-                    });
-            };
-            const checkInStock = (cart) => {
-                const updateCartArray = (item) => {
-                    let isFound = cartProducts.findIndex(
-                        (product) =>
-                            product._id.toString() === item._id.toString()
-                    );
-                    if (isFound === -1) {
-                        cartProducts.push({
-                            mongoId: mongoose.Types.ObjectId(item._id),
-                            _id: item._id,
-                            count: item.count,
-                        });
-                    } else {
-                        cartProducts[isFound].count += item.count;
-                    }
-                };
-                cart.forEach((item) => {
-                    updateCartArray(item);
-                    if (item.items && item.items.length) {
-                        item.items.forEach((sub_item) => {
-                            updateCartArray(sub_item);
-                        });
-                    }
-                });
-                const getProductCount = (id) => {
-                    let findProduct = cartProducts.findIndex(
-                        (item) => item._id === id.toString()
-                    );
-                    return cartProducts[findProduct].count;
-                };
-                let checkStockPromise = new Promise((resolve, reject) => {
-                    let cartProductMongoIds = cartProducts.map((item) => {
-                        return item.mongoId;
-                    });
-                    Product.find({ _id: { $in: cartProductMongoIds } }).then(
-                        (products) => {
-                            products.forEach((product, index) => {
-                                if (
-                                    product.quantity <
-                                    getProductCount(product._id)
-                                ) {
-                                    reject({ type: 'stock' });
-                                    outOfStockProducts.push(product);
-                                }
-                                if (products.length === index + 1) {
-                                    resolve();
-                                }
-                            });
-                        }
-                    );
-                });
-                return checkStockPromise;
-            };
+            const { address_id, promo_code = null, cart } = req.body;
+
             const checkSampleAvailability = (samples) => {
                 let sampleAvailabilityPromise = new Promise(
                     (resolve, reject) => {
@@ -421,7 +264,7 @@ exports.createOrder = (req, res, next) => {
                 })
                 .then(() => {
                     if (cart.length) {
-                        let orderItems = getItems();
+                        let orderItems = getItems(cart);
                         Address.findOne({
                             _id: address_id,
                             user_id: req.user._id,
@@ -439,7 +282,7 @@ exports.createOrder = (req, res, next) => {
                                                 if (promoCode) {
                                                     promoCodeObj = promoCode;
                                                     discount =
-                                                        cartTotal *
+                                                        orderItems.total *
                                                         (promoCode.percentage /
                                                             100);
                                                     if (
@@ -456,13 +299,13 @@ exports.createOrder = (req, res, next) => {
                                                             .substr(0, 2)
                                                             .toUpperCase() +
                                                         Date.now(),
-                                                    items: orderItems,
+                                                    items: orderItems.list,
                                                     address_id: address_id,
                                                     status: 'pending',
-                                                    sub_total: cartTotal,
+                                                    sub_total: orderItems.total,
                                                     discount: discount,
                                                     total: Math.floor(
-                                                        cartTotal -
+                                                        orderItems.total -
                                                             discount +
                                                             delivery_fees
                                                     ),
@@ -473,9 +316,43 @@ exports.createOrder = (req, res, next) => {
                                                     .save()
                                                     .then(() => {
                                                         updateProducts(
-                                                            orderItems,
-                                                            promoCodeObj
-                                                        );
+                                                            orderItems.list,
+                                                            promoCodeObj,
+                                                            req.user._id
+                                                        )
+                                                            .then(() => {
+                                                                req.user
+                                                                    .updateSampleList(
+                                                                        samplesList
+                                                                    )
+                                                                    .then(
+                                                                        () => {
+                                                                            res.send(
+                                                                                'Ordered has been submitted successfully'
+                                                                            );
+                                                                        }
+                                                                    )
+                                                                    .catch(
+                                                                        (
+                                                                            err
+                                                                        ) => {
+                                                                            next(
+                                                                                errorHandler(
+                                                                                    err.message,
+                                                                                    405
+                                                                                )
+                                                                            );
+                                                                        }
+                                                                    );
+                                                            })
+                                                            .catch((err) => {
+                                                                next(
+                                                                    errorHandler(
+                                                                        err.message,
+                                                                        405
+                                                                    )
+                                                                );
+                                                            });
                                                     })
                                                     .catch((err) => {
                                                         res.status(500).send(
@@ -504,7 +381,7 @@ exports.createOrder = (req, res, next) => {
                     if (err.type === 'stock') {
                         res.status(405).send({
                             message: 'Out of stock',
-                            data: outOfStockProducts,
+                            data: err.data,
                         });
                     }
                     if (err.type === 'sample') {

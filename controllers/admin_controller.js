@@ -4,7 +4,11 @@ const Code = require('../models/code_model');
 const moment = require('moment');
 const crypto = require('crypto');
 const errorHandler = require('../utils/errorHandler');
-
+const {
+    checkInStock,
+    getItems,
+    updateProducts,
+} = require('./order_controller');
 exports.createProduct = (req, res, next) => {
     let newProducts = new Product({ ...req.body, user_id: req.user._id });
     newProducts
@@ -184,4 +188,39 @@ exports.createCodes = (req, res, next) => {
             res.send('Codes has been created successfully');
         }
     }
+};
+
+exports.createOrder = (req, res, next) => {
+    const { pos } = req.body;
+    checkInStock(pos)
+        .then(() => {
+            let orderItems = getItems(pos);
+            let newOrder = new Order({
+                order_id: 'sh' + Date.now(),
+                items: orderItems.list,
+                status: 'completed',
+                sub_total: orderItems.total,
+                discount: 0,
+                total: Math.floor(orderItems.total - 0),
+                order_type: 'shop',
+                user_id: req.user._id,
+            });
+            newOrder.save().then(() => {
+                updateProducts(orderItems.list, null, null)
+                    .then(() => {
+                        res.send('Ordered has been submitted successfully');
+                    })
+                    .catch((err) => {
+                        next(errorHandler(err.message, 405));
+                    });
+            });
+        })
+        .catch((err) => {
+            if (err.type === 'stock') {
+                res.status(405).send({
+                    message: 'Out of stock',
+                    data: err.data,
+                });
+            }
+        });
 };
