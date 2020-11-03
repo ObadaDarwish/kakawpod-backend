@@ -8,6 +8,7 @@ const codeSchema = new Schema(
         count: { type: Number, required: true },
         max_discount: { type: Number, required: true },
         is_active: { type: Boolean, required: true },
+        code_type: { type: String, default: 'online' },
         users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     },
     { timestamps: true }

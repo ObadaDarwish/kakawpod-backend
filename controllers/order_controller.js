@@ -10,7 +10,6 @@ exports.checkInStock = (cart) => {
             (product) => product._id.toString() === item._id.toString()
         );
         if (isFound === -1) {
-            console.log(item._id);
             cartProducts.push({
                 mongoId: mongoose.Types.ObjectId(item._id),
                 _id: item._id,

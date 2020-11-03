@@ -191,29 +191,56 @@ exports.createCodes = (req, res, next) => {
 };
 
 exports.createOrder = (req, res, next) => {
-    const { pos } = req.body;
+    const { pos, OTP } = req.body;
     checkInStock(pos)
         .then(() => {
             let orderItems = getItems(pos);
-            let newOrder = new Order({
-                order_id: 'sh' + Date.now(),
-                items: orderItems.list,
-                status: 'completed',
-                sub_total: orderItems.total,
-                discount: 0,
-                total: Math.floor(orderItems.total - 0),
-                order_type: 'shop',
-                user_id: req.user._id,
-            });
-            newOrder.save().then(() => {
-                updateProducts(orderItems.list, null, null)
-                    .then(() => {
-                        res.send('Ordered has been submitted successfully');
-                    })
-                    .catch((err) => {
-                        next(errorHandler(err.message, 405));
+            validateDiscountOTP(OTP, req.user._id)
+                .then((codeValid) => {
+                    let posDiscount = 0;
+                    if (codeValid) {
+                        posDiscount =
+                            orderItems.total * (codeValid.percentage / 100);
+                    }
+
+                    let newOrder = new Order({
+                        order_id: 'sh' + Date.now(),
+                        items: orderItems.list,
+                        status: 'completed',
+                        sub_total: orderItems.total,
+                        discount: posDiscount,
+                        total: Math.floor(orderItems.total - posDiscount),
+                        order_type: 'shop',
+                        user_id: req.user._id,
                     });
-            });
+                    newOrder.save().then(() => {
+                        updateProducts(orderItems.list, null, null)
+                            .then(() => {
+                                const response = () => {
+                                    res.send(
+                                        'Ordered has been submitted successfully'
+                                    );
+                                };
+                                if (codeValid) {
+                                    Code.findOneAndUpdate(
+                                        { code: OTP },
+                                        { is_active: false },
+                                        (err, result) => {
+                                            response();
+                                        }
+                                    );
+                                } else {
+                                    response();
+                                }
+                            })
+                            .catch((err) => {
+                                next(errorHandler(err.message, 405));
+                            });
+                    });
+                })
+                .catch((err) => {
+                    res.status(500).send(err);
+                });
         })
         .catch((err) => {
             if (err.type === 'stock') {
@@ -223,4 +250,46 @@ exports.createOrder = (req, res, next) => {
                 });
             }
         });
+};
+const validateDiscountOTP = (code, userID) => {
+    if (code) {
+        return Code.findOne({
+            code: code,
+            is_active: true,
+            count: { $gt: 0 },
+            users: { $nin: [userID] },
+        });
+    } else {
+        return new Promise((resolve) => {
+            resolve(null);
+        });
+    }
+};
+exports.validateOTP = (req, res, next) => {
+    let code = req.params.code;
+    validateDiscountOTP(code, req.user._id)
+        .then((result) => {
+            if (result) {
+                res.json({ percentage: result.percentage, code: result.code });
+            } else {
+                next(errorHandler('Invalid code', 405));
+            }
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
+exports.requestDiscountOTP = (req, res, next) => {
+    let { percentage } = req.body;
+    let newCode = new Code({
+        code: (Math.random() * 10000 + 1000).toFixed(0),
+        percentage: percentage,
+        max_discount: 0,
+        count: 1,
+        code_type: 'shop',
+        is_active: true,
+    });
+    newCode.save().then(() => {
+        res.send('OTP has been created successfully');
+    });
 };
