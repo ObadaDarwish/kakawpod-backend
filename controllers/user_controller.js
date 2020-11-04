@@ -317,7 +317,7 @@ exports.getOrders = (req, res, next) => {
         .count()
         .then((count) => {
             total = count;
-            Order.find({ user_id: req.user._id })
+            Order.find({ user_id: req.user._id, order_type: 'online' })
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * 10)
                 .limit(10)

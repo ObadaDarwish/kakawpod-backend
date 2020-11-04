@@ -83,22 +83,21 @@ exports.deleteProduct = (req, res, next) => {
 exports.getOrders = (req, res, next) => {
     // start_at timestamp  start of day
     // end_at timestamp end of day
-    let currentDate = new Date().getTime() / 1000;
+    // let currentDate = new Date().getTime() / 1000;
     let total = 0;
-    const {
-        status = 'pending',
-        start_at = currentDate - 86400,
-        end_at = currentDate,
-        page = 1,
-    } = req.query;
-
+    let { status = 'pending', start_at, end_at, page = 1 } = req.query;
     const getObj = () => {
         findObj = {};
         findObj.status = status;
-        findObj.createdAt = {
-            $gte: moment.unix(start_at).format(),
-            $lte: moment.unix(end_at).format(),
-        };
+        if (start_at && end_at) {
+            if (start_at === end_at) {
+                end_at = parseInt(end_at) + 86400;
+            }
+            findObj.createdAt = {
+                $gte: moment.unix(start_at).format(),
+                $lte: moment.unix(end_at).format(),
+            };
+        }
         return findObj;
     };
     Order.find(getObj())
@@ -107,16 +106,17 @@ exports.getOrders = (req, res, next) => {
             total = totalOrders;
             Order.find(getObj())
                 .sort({ createdAt: -1 })
+                .skip((page - 1) * 20)
+                .limit(20)
                 .populate([
                     {
                         path: 'items.item_id',
-                        options: {
-                            limit: 10,
-                            skip: (page - 1) * 10,
-                        },
                     },
                     {
                         path: 'items.sub_items.sub_item_id',
+                    },
+                    {
+                        path: 'user_id',
                     },
                 ])
                 .exec(function (err, orders) {
@@ -202,7 +202,6 @@ exports.createOrder = (req, res, next) => {
                         posDiscount =
                             orderItems.total * (codeValid.percentage / 100);
                     }
-
                     let newOrder = new Order({
                         order_id: 'sh' + Date.now(),
                         items: orderItems.list,
