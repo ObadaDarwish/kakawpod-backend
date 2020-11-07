@@ -131,29 +131,20 @@ exports.getOrders = (req, res, next) => {
 
 exports.updateOrder = (req, res, next) => {
     const order_id = req.params.code;
-    const order_status = req.body.order_status;
+    const { order_status, OTP } = req.body;
     const authority = req.user.authority;
-    const canUpdate = (authority) => {
-        if (authority === 1) {
-            return true;
-        } else {
-            if (
-                order_status === 'out for delivery' ||
-                order_status === 'delivered'
-            ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    };
-    if (canUpdate(authority)) {
+    const update = () => {
         Order.findOneAndUpdate(
             { _id: order_id },
             { status: order_status },
             (err, result) => {
                 if (result) {
                     if (!err) {
+                        Code.findOneAndUpdate(
+                            { code: OTP },
+                            { is_active: false },
+                            (err, result) => {}
+                        );
                         res.send('Order updated successfully');
                     } else {
                         res.status(500).send(err);
@@ -163,9 +154,29 @@ exports.updateOrder = (req, res, next) => {
                 }
             }
         );
-    } else {
-        next(errorHandler('Not authorized!', 405));
-    }
+    };
+    handleValidateOTP(OTP, req.user._id)
+        .then((result) => {
+            if (authority === 1) {
+                update();
+            } else {
+                if (
+                    order_status === 'out for delivery' ||
+                    order_status === 'delivered'
+                ) {
+                    update();
+                } else {
+                    if (result) {
+                        update();
+                    } else {
+                        next(errorHandler('Invalid OTP', 405));
+                    }
+                }
+            }
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
 };
 
 exports.createCodes = (req, res, next) => {
@@ -195,7 +206,7 @@ exports.createOrder = (req, res, next) => {
     checkInStock(pos)
         .then(() => {
             let orderItems = getItems(pos);
-            validateDiscountOTP(OTP, req.user._id)
+            handleValidateOTP(OTP, req.user._id)
                 .then((codeValid) => {
                     let posDiscount = 0;
                     if (codeValid) {
@@ -250,7 +261,7 @@ exports.createOrder = (req, res, next) => {
             }
         });
 };
-const validateDiscountOTP = (code, userID) => {
+const handleValidateOTP = (code, userID) => {
     if (code) {
         return Code.findOne({
             code: code,
@@ -266,7 +277,7 @@ const validateDiscountOTP = (code, userID) => {
 };
 exports.validateOTP = (req, res, next) => {
     let code = req.params.code;
-    validateDiscountOTP(code, req.user._id)
+    handleValidateOTP(code, req.user._id)
         .then((result) => {
             if (result) {
                 res.json({ percentage: result.percentage, code: result.code });
@@ -278,7 +289,7 @@ exports.validateOTP = (req, res, next) => {
             res.status(500).send(err);
         });
 };
-exports.requestDiscountOTP = (req, res, next) => {
+exports.requestOTP = (req, res, next) => {
     let { percentage } = req.body;
     let newCode = new Code({
         code: (Math.random() * 10000 + 1000).toFixed(0),

@@ -15,10 +15,6 @@ route.post('/codes', isAdmin, admincontroller.createCodes);
 route.get('/orders', isEmployee_Admin, admincontroller.getOrders);
 route.put('/order/:code', isEmployee_Admin, admincontroller.updateOrder);
 route.post('/pos', isEmployee_Admin, admincontroller.createOrder);
-route.post(
-    '/pos/discountOTP',
-    isEmployee_Admin,
-    admincontroller.requestDiscountOTP
-);
-route.post('/pos/OTP/:code', isEmployee_Admin, admincontroller.validateOTP);
+route.post('/OTP', isEmployee_Admin, admincontroller.requestOTP);
+route.post('/validateOTP/:code', isEmployee_Admin, admincontroller.validateOTP);
 module.exports = route;
