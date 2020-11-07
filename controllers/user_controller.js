@@ -233,13 +233,8 @@ exports.requestEmailVerification = (req, res, next) => {
                             {
                                 verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${token}`,
                             }
-                        )
-                            .then(() => {
-                                res.send('Verify email was successfully sent');
-                            })
-                            .catch((err) => {
-                                res.status(500).send(err);
-                            });
+                        );
+                        res.send('Verify email was successfully sent');
                     });
                 }
             });
@@ -405,6 +400,11 @@ exports.contact = (req, res, next) => {
     newMessage
         .save()
         .then(() => {
+            sendEmail(
+                req.body.email,
+                'Contact message',
+                'd-7147c4f02f104da7b14264cb260f01a4'
+            );
             res.send('message sent successfully');
         })
         .catch((err) => {

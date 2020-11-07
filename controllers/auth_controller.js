@@ -93,28 +93,23 @@ exports.signup = (req, res, next) => {
                                             {
                                                 verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${EmailToken}`,
                                             }
-                                        )
-                                            .then(() => {
-                                                let userObj = filterUser(user);
-                                                Address.find({
-                                                    user_id: userObj._id,
-                                                }).then((addresses) => {
-                                                    userObj.addresses = addresses;
-                                                    jwt.sign(
-                                                        userObj,
-                                                        process.env.JWT_SECRET,
-                                                        function (err, token) {
-                                                            res.send({
-                                                                user: userObj,
-                                                                token: token,
-                                                            });
-                                                        }
-                                                    );
-                                                });
-                                            })
-                                            .catch((err) => {
-                                                res.status(500).send(err);
-                                            });
+                                        );
+                                        let userObj = filterUser(user);
+                                        Address.find({
+                                            user_id: userObj._id,
+                                        }).then((addresses) => {
+                                            userObj.addresses = addresses;
+                                            jwt.sign(
+                                                userObj,
+                                                process.env.JWT_SECRET,
+                                                function (err, token) {
+                                                    res.send({
+                                                        user: userObj,
+                                                        token: token,
+                                                    });
+                                                }
+                                            );
+                                        });
                                     })
                                     .catch((err) => {
                                         res.status(500).send(err);
@@ -152,15 +147,10 @@ exports.resetPassword = (req, res, next) => {
                                         {
                                             forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword?token=${token}`,
                                         }
-                                    )
-                                        .then(() => {
-                                            res.send(
-                                                'reset password email was successfully sent'
-                                            );
-                                        })
-                                        .catch((err) => {
-                                            res.status(500).send(err);
-                                        });
+                                    );
+                                    res.send(
+                                        'reset password email was successfully sent'
+                                    );
                                 })
                                 .catch((err) => {
                                     res.status(500).send(err);
