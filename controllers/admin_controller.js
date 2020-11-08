@@ -4,6 +4,7 @@ const Code = require('../models/code_model');
 const moment = require('moment');
 const crypto = require('crypto');
 const errorHandler = require('../utils/errorHandler');
+const sendEmail = require('../utils/email');
 const {
     checkInStock,
     getItems,
@@ -134,12 +135,38 @@ exports.updateOrder = (req, res, next) => {
     const { order_status, OTP } = req.body;
     const authority = req.user.authority;
     const update = () => {
-        Order.findOneAndUpdate(
-            { _id: order_id },
-            { status: order_status },
-            (err, result) => {
+        Order.findOneAndUpdate({ _id: order_id }, { status: order_status })
+            .populate('user_id')
+            .exec((err, result) => {
                 if (result) {
                     if (!err) {
+                        if (
+                            order_status === 'out for delivery' ||
+                            order_status === 'delivered'
+                        ) {
+                            sendEmail(
+                                result.user_id.email,
+                                order_status === 'delivered'
+                                    ? 'Delivered'
+                                    : 'Out for delivery',
+                                'd-d8bc445965b24d1689bed4ac44a1a5fd',
+                                {
+                                    subject:
+                                        order_status === 'delivered'
+                                            ? 'Delivered'
+                                            : 'Out for delivery',
+                                    title:
+                                        order_status === 'delivered'
+                                            ? 'Delivered'
+                                            : 'Out for delivery',
+                                    text:
+                                        order_status === 'delivered'
+                                            ? 'Your order has been delivered successfully, thank you for shopping with us, it has been our pleasure.'
+                                            : "Please be noted that your order is on it's way to your address, thank you for your trust.",
+                                    order_no: result.order_id,
+                                }
+                            );
+                        }
                         Code.findOneAndUpdate(
                             { code: OTP },
                             { is_active: false },
@@ -152,8 +179,7 @@ exports.updateOrder = (req, res, next) => {
                 } else {
                     next(errorHandler('Not authorized!', 405));
                 }
-            }
-        );
+            });
     };
     handleValidateOTP(OTP, req.user._id)
         .then((result) => {

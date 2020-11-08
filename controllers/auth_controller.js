@@ -91,6 +91,7 @@ exports.signup = (req, res, next) => {
                                             'Verify Email',
                                             'd-8d621f33192e456694b5573c8818dd41',
                                             {
+                                                subject: 'Verify Email',
                                                 verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${EmailToken}`,
                                             }
                                         );
@@ -145,6 +146,7 @@ exports.resetPassword = (req, res, next) => {
                                         'Resetting password',
                                         'd-5ce505e731334bafa92cc6da51321334',
                                         {
+                                            subject: 'Resetting password',
                                             forgot_password_link: `${process.env.FRONTEND_DOMAIN}/resetPassword?token=${token}`,
                                         }
                                     );

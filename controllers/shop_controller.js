@@ -8,6 +8,7 @@ const {
     updateProducts,
     getItems,
 } = require('./order_controller');
+const sendEmail = require('../utils/email');
 
 exports.getMyCart = (req, res, next) => {
     req.user
@@ -224,7 +225,7 @@ exports.createOrder = (req, res, next) => {
             let delivery_fees = 0;
             let promoCodeObj = null;
             let samplesList = [];
-
+            let addressObj = {};
             const { address_id, promo_code = null, cart } = req.body;
 
             const checkSampleAvailability = (samples) => {
@@ -272,6 +273,7 @@ exports.createOrder = (req, res, next) => {
                                     res.status(500).send(err);
                                 } else {
                                     if (address) {
+                                        addressObj = address;
                                         delivery_fees =
                                             address.delivery_fees_id.fee;
                                         validatePromoCode(promo_code, req.user)
@@ -311,7 +313,60 @@ exports.createOrder = (req, res, next) => {
                                                 });
                                                 newOrder
                                                     .save()
-                                                    .then(() => {
+                                                    .then((savedOrder) => {
+                                                        let mailItems = cart.map(
+                                                            (cartItem) => {
+                                                                return {
+                                                                    ...cartItem,
+                                                                    image:
+                                                                        cartItem
+                                                                            .images[0]
+                                                                            .url,
+                                                                };
+                                                            }
+                                                        );
+                                                        sendEmail(
+                                                            req.user.email,
+                                                            'Order',
+                                                            'd-0a47ed2cfbc24571849fde9dca426794',
+                                                            {
+                                                                subject:
+                                                                    'Order',
+                                                                order_no:
+                                                                    savedOrder.order_id,
+                                                                items: mailItems,
+                                                                payment_method:
+                                                                    'COD',
+                                                                sub_total: `EGP${orderItems.total}`,
+                                                                shipping: `EGP${delivery_fees}`,
+                                                                discount: `EGP${discount}`,
+                                                                total: `EGP${
+                                                                    orderItems.total -
+                                                                    discount +
+                                                                    delivery_fees
+                                                                }`,
+                                                                address: {
+                                                                    apartment:
+                                                                        addressObj.apartment,
+                                                                    floor:
+                                                                        addressObj.floor,
+                                                                    building:
+                                                                        addressObj.building,
+                                                                    street:
+                                                                        addressObj.street,
+                                                                    area:
+                                                                        addressObj.area,
+                                                                    city:
+                                                                        addressObj.city,
+                                                                    country:
+                                                                        addressObj.country,
+                                                                },
+                                                            }
+                                                        ).catch((err) => {
+                                                            res.status(
+                                                                500
+                                                            ).send(err);
+                                                        });
                                                         updateProducts(
                                                             orderItems.list,
                                                             promoCodeObj,

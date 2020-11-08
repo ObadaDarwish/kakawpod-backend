@@ -231,6 +231,7 @@ exports.requestEmailVerification = (req, res, next) => {
                             'Verify Email',
                             'd-8d621f33192e456694b5573c8818dd41',
                             {
+                                subject: 'Verify Email',
                                 verify_email_link: `${process.env.FRONTEND_DOMAIN}/verifyEmail?token=${token}`,
                             }
                         );
@@ -403,7 +404,8 @@ exports.contact = (req, res, next) => {
             sendEmail(
                 req.body.email,
                 'Contact message',
-                'd-7147c4f02f104da7b14264cb260f01a4'
+                'd-7147c4f02f104da7b14264cb260f01a4',
+                { subject: 'Contact message' }
             );
             res.send('message sent successfully');
         })

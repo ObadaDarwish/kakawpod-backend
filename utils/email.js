@@ -9,6 +9,6 @@ const sendEmail = (to, subject, templateId, dynamic_template_data) => {
         template_id: templateId,
         dynamic_template_data: dynamic_template_data,
     };
-    sgMail.send(msg);
+    return sgMail.send(msg);
 };
 module.exports = sendEmail;
