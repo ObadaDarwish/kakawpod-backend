@@ -10,6 +10,22 @@ const {
     getItems,
     updateProducts,
 } = require('./order_controller');
+exports.getProducts = (req, res, next) => {
+    const { page } = req.query;
+    Product.find()
+        .count()
+        .then((total) => {
+            Product.find()
+                .skip((page - 1) * 20)
+                .limit(20)
+                .then((products) => {
+                    res.send({ products: products, total: total });
+                })
+                .catch((err) => {
+                    res.status(500).send(err);
+                });
+        });
+};
 exports.createProduct = (req, res, next) => {
     let newProducts = new Product({ ...req.body, user_id: req.user._id });
     newProducts
