@@ -30,8 +30,11 @@ exports.createProduct = (req, res, next) => {
     let newProducts = new Product({ ...req.body, user_id: req.user._id });
     newProducts
         .save()
-        .then(() => {
-            res.send('product saved successfully');
+        .then((product) => {
+            res.send({
+                message: 'product saved successfully',
+                product: product,
+            });
         })
         .catch((err) => {
             res.status(500).send(err);
@@ -64,7 +67,10 @@ exports.updateProduct = (req, res, next) => {
         (err, result) => {
             if (result) {
                 if (!err) {
-                    res.send('Product was successfully updated');
+                    res.send({
+                        message: 'Product was successfully updated',
+                        product: result,
+                    });
                 } else {
                     res.status(500).send(err);
                 }
