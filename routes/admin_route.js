@@ -9,7 +9,7 @@ route.get('/products', isAdmin, admincontroller.getProducts);
 route.post('/product', isAdmin, admincontroller.createProduct);
 route.post('/product/image', isAdmin, admincontroller.uploadProductImage);
 route.put('/product/:code', isAdmin, admincontroller.updateProduct);
-route.delete('/product/:code', isAdmin, admincontroller.deleteProduct);
+route.delete('/product/:code', isAdmin, admincontroller.toggleDeleteProduct);
 route.post('/codes', isAdmin, admincontroller.createCodes);
 
 // employee

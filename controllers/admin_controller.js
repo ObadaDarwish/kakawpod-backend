@@ -83,23 +83,29 @@ exports.updateProduct = (req, res, next) => {
     });
 };
 
-exports.deleteProduct = (req, res, next) => {
+exports.toggleDeleteProduct = (req, res, next) => {
     const productID = req.params.code;
-    Product.findOneAndDelete(
-        { _id: productID, user_id: req.user._id },
-        (err, result) => {
-            if (result) {
-                if (!err) {
-                    res.send('Product was deleted successfully');
+    Product.findOne({
+        _id: productID,
+        user_id: req.user._id,
+    }).then((selectedProduct) => {
+        Product.findOneAndUpdate(
+            { _id: productID, user_id: req.user._id },
+            { is_deleted: !selectedProduct.is_deleted },
+            (err, result) => {
+                if (result) {
+                    if (!err) {
+                        res.send('Product was deleted successfully');
+                    } else {
+                        res.status(500).send(err);
+                    }
                 } else {
-                    res.status(500).send(err);
+                    next(errorHandler('Not authorized!', 405));
                 }
-            } else {
-                next(errorHandler('Not authorized!', 405));
             }
-        }
-    ).catch((err) => {
-        res.status(500).send(err);
+        ).catch((err) => {
+            res.status(500).send(err);
+        });
     });
 };
 

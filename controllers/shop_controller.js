@@ -26,7 +26,7 @@ exports.getMyCart = (req, res, next) => {
 exports.addToCart = (req, res, next) => {
     const { product_id } = req.body;
     const userId = req.user._id;
-    Product.findById(product_id).then((product) => {
+    Product.findOne({ _id: product_id, is_deleted: false }).then((product) => {
         if (product) {
             try {
                 req.user.addToCart(product).then(() => {

@@ -2,7 +2,7 @@ const Product = require('../models/product_model');
 
 exports.getProduct = (req, res, next) => {
     const productId = req.params.code;
-    Product.findById(productId)
+    Product.findOne({ _id: productId, is_deleted: false })
         .then((product) => {
             res.send(product);
         })
@@ -11,7 +11,10 @@ exports.getProduct = (req, res, next) => {
         });
 };
 exports.getTopSellingProducts = (req, res, next) => {
-    Product.find({ $or: [{ category: 'bar' }, { category: 'cooking' }] })
+    Product.find({
+        $or: [{ category: 'bar' }, { category: 'cooking' }],
+        is_deleted: false,
+    })
         .sort({ sold: -1 })
         .limit(10)
         .exec(function (err, products) {
@@ -27,7 +30,7 @@ exports.getAllProduct = (req, res, next) => {
     let total = 0;
 
     const getObj = () => {
-        findObj = {};
+        findObj = { is_deleted: false };
         if (category) {
             findObj.category = category;
         }

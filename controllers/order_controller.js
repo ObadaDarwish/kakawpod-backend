@@ -38,7 +38,10 @@ exports.checkInStock = (cart) => {
         let cartProductMongoIds = cartProducts.map((item) => {
             return item.mongoId;
         });
-        Product.find({ _id: { $in: cartProductMongoIds } }).then((products) => {
+        Product.find({
+            _id: { $in: cartProductMongoIds },
+            is_deleted: false,
+        }).then((products) => {
             products.forEach((product, index) => {
                 if (product.quantity < getProductCount(product._id)) {
                     outOfStockProducts.push(product);

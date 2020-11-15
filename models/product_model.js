@@ -51,6 +51,10 @@ const productSchema = new Schema(
             type: String,
             required: true,
         },
+        is_deleted: {
+            type: Boolean,
+            default: false,
+        },
         sold: { type: Number, default: 0 },
         user_id: { type: Schema.Types.ObjectId, ref: 'User' },
     },
