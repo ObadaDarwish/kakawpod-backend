@@ -19,7 +19,7 @@ exports.getProducts = (req, res, next) => {
                 .skip((page - 1) * 20)
                 .limit(20)
                 .then((products) => {
-                    res.send({ products: products, total: total });
+                    res.send({ docs: products, total: total });
                 })
                 .catch((err) => {
                     res.status(500).send(err);
@@ -233,6 +233,23 @@ exports.updateOrder = (req, res, next) => {
         });
 };
 
+exports.getCodes = (req, res, next) => {
+    const { page } = req.query;
+    Code.find()
+        .count()
+        .then((total) => {
+            Code.find()
+                .skip((page - 1) * 20)
+                .limit(20)
+                .sort({ createdAt: -1 })
+                .then((codes) => {
+                    res.send({ docs: codes, total: total });
+                })
+                .catch((err) => {
+                    res.status(500).send(err);
+                });
+        });
+};
 exports.createCodes = (req, res, next) => {
     const { no_of_codes, no_of_usage, percentage, max_discount } = req.body;
     for (let i = 0; i < no_of_codes; i++) {
