@@ -250,8 +250,28 @@ exports.getCodes = (req, res, next) => {
                 });
         });
 };
+exports.updateCodes = (req, res, next) => {
+    const { code } = req.params;
+    const { is_active } = req.body;
+    Code.findOneAndUpdate(
+        { code: code },
+        { is_active: is_active },
+        (err, result) => {
+            if (result) {
+                if (!err) {
+                    res.send('Code was updated successfully');
+                } else {
+                    res.status(500).send(err);
+                }
+            } else {
+                next(errorHandler('Not authorized!', 405));
+            }
+        }
+    );
+};
 exports.createCodes = (req, res, next) => {
     const { no_of_codes, no_of_usage, percentage, max_discount } = req.body;
+    let createdCodes = [];
     for (let i = 0; i < no_of_codes; i++) {
         crypto.randomBytes(3, (err, buf) => {
             if (!err) {
@@ -263,12 +283,17 @@ exports.createCodes = (req, res, next) => {
                     count: no_of_usage,
                     is_active: true,
                 });
-                newCode.save();
+                createdCodes.push(newCode);
+                newCode.save().then(() => {
+                    if (i === no_of_codes - 1) {
+                        res.send({
+                            message: 'Codes has been created successfully',
+                            codes: createdCodes,
+                        });
+                    }
+                });
             }
         });
-        if (i === no_of_codes - 1) {
-            res.send('Codes has been created successfully');
-        }
     }
 };
 

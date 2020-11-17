@@ -12,6 +12,7 @@ route.put('/product/:code', isAdmin, admincontroller.updateProduct);
 route.delete('/product/:code', isAdmin, admincontroller.toggleDeleteProduct);
 //codes
 route.get('/codes', isAdmin, admincontroller.getCodes);
+route.put('/codes/:code', isAdmin, admincontroller.updateCodes);
 route.post('/codes', isAdmin, admincontroller.createCodes);
 
 // employee
