@@ -38,17 +38,24 @@ exports.checkInStock = (cart) => {
         let cartProductMongoIds = cartProducts.map((item) => {
             return item.mongoId;
         });
+        let cartItems = [...cart];
         Product.find({
             _id: { $in: cartProductMongoIds },
             is_deleted: false,
         }).then((products) => {
             products.forEach((product, index) => {
+                let isFound = cartItems.findIndex(
+                    (item) => item._id.toString() === product._id.toString()
+                );
+                if (isFound >= 0) {
+                    cartItems[isFound].price = product.price;
+                }
                 if (product.quantity < getProductCount(product._id)) {
                     outOfStockProducts.push(product);
                     reject({ type: 'stock', data: outOfStockProducts });
                 }
                 if (products.length === index + 1) {
-                    resolve();
+                    resolve(cartItems);
                 }
             });
         });

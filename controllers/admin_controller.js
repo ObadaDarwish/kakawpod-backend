@@ -380,8 +380,8 @@ exports.createCodes = (req, res, next) => {
 exports.createOrder = (req, res, next) => {
     const { pos, OTP } = req.body;
     checkInStock(pos)
-        .then(() => {
-            let orderItems = getItems(pos);
+        .then((POSUpdatedItems) => {
+            let orderItems = getItems(POSUpdatedItems);
             handleValidateOTP(OTP, req.user._id)
                 .then((codeValid) => {
                     let posDiscount = 0;

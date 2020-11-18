@@ -260,9 +260,9 @@ exports.createOrder = (req, res, next) => {
                 .then(() => {
                     return checkInStock(req.body.cart);
                 })
-                .then(() => {
+                .then((retrievedProducts) => {
                     if (cart.length) {
-                        let orderItems = getItems(cart);
+                        let orderItems = getItems(retrievedProducts);
                         Address.findOne({
                             _id: address_id,
                             user_id: req.user._id,
