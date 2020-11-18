@@ -117,6 +117,9 @@ exports.updateProducts = (orderItems, promoCodeObj, userId) => {
                 currentUsers.push(userId);
                 code.users = currentUsers;
                 code.count -= 1;
+                if (!code.count) {
+                    code.is_active = false;
+                }
                 code.save();
                 resolve();
             });

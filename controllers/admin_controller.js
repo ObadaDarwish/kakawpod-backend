@@ -400,6 +400,15 @@ exports.createOrder = (req, res, next) => {
                         user_id: req.user._id,
                     });
                     newOrder.save().then(() => {
+                        if (codeValid) {
+                            Code.findOne({
+                                code: OTP,
+                            }).then((code) => {
+                                code.count -= 1;
+                                code.is_active = false;
+                                code.save();
+                            });
+                        }
                         updateProducts(orderItems.list, null, null)
                             .then(() => {
                                 const response = () => {
