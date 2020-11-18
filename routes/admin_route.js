@@ -17,6 +17,11 @@ route.post('/codes', isAdmin, admincontroller.createCodes);
 
 // employee
 route.get('/orders', isEmployee_Admin, admincontroller.getOrders);
+route.put(
+    '/completedOrder/:code',
+    isEmployee_Admin,
+    admincontroller.updateCompletedOrder
+);
 route.put('/order/:code', isEmployee_Admin, admincontroller.updateOrder);
 route.post('/pos', isEmployee_Admin, admincontroller.createOrder);
 route.post('/OTP', isEmployee_Admin, admincontroller.requestOTP);

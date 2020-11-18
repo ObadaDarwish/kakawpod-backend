@@ -157,7 +157,87 @@ exports.getOrders = (req, res, next) => {
                 });
         });
 };
-
+exports.updateCompletedOrder = (req, res, next) => {
+    const { code } = req.params;
+    const { OTP } = req.body;
+    let items = [];
+    const handleOrder = () => {
+        Order.findOne({ _id: code })
+            .populate('items.item_id')
+            .populate('items.sub_items.sub_item_id')
+            .exec(function (err, order) {
+                order.items.forEach((item) => {
+                    let subItems = [];
+                    if (item.sub_items.length) {
+                        subItems = item.sub_items.map((sub_item) => {
+                            return {
+                                ...sub_item.sub_item_id._doc,
+                                count: sub_item.quantity,
+                            };
+                        });
+                    }
+                    items.push({
+                        ...item.item_id._doc,
+                        count: item.quantity,
+                        items: subItems,
+                    });
+                });
+                // update products quantities
+                items.forEach((item) => {
+                    if (item.items.length) {
+                        item.items.forEach((subItem) => {
+                            Product.findById(subItem._id).then((product) => {
+                                product.quantity += subItem.count;
+                                product.sold -= subItem.count;
+                                product.save();
+                            });
+                        });
+                    }
+                    Product.findById(item._id).then((product) => {
+                        product.quantity += item.count;
+                        product.sold -= item.count;
+                        product.save();
+                    });
+                });
+                Order.findOneAndDelete({ _id: code }, (err, result) => {
+                    if (result) {
+                        if (!err) {
+                            res.send({
+                                message: 'order was deleted successfully',
+                                items: items,
+                            });
+                        } else {
+                            res.status(500).send(err);
+                        }
+                    } else {
+                        next(errorHandler('Not authorized!', 405));
+                    }
+                });
+            });
+    };
+    if (req.user.authority === 2) {
+        handleValidateOTP(OTP, req.user._id)
+            .then((valid) => {
+                if (valid) {
+                    Code.findOne({
+                        code: OTP,
+                    }).then((code) => {
+                        code.count -= 1;
+                        code.is_active = false;
+                        code.save();
+                    });
+                    handleOrder();
+                } else {
+                    next(errorHandler('Invalid OTP', 405));
+                }
+            })
+            .catch((err) => {
+                res.status(500).send(err);
+            });
+    } else {
+        handleOrder();
+    }
+};
 exports.updateOrder = (req, res, next) => {
     const order_id = req.params.code;
     const { order_status, OTP } = req.body;
