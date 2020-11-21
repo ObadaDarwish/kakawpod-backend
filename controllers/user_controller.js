@@ -331,21 +331,65 @@ exports.getOrders = (req, res, next) => {
 };
 exports.cancelOrder = (req, res, next) => {
     const { order_id, order_status } = req.body;
-    Order.findOneAndUpdate(
-        { _id: order_id, user_id: req.user._id, status: 'pending' },
-        { status: 'cancelled' },
-        (err, result) => {
-            if (result) {
-                if (!err) {
-                    res.send('Order updated successfully');
+    let items = [];
+    Order.findOne({ _id: order_id, user_id: req.user._id, status: 'pending' })
+        .populate('items.item_id')
+        .populate('items.sub_items.sub_item_id')
+        .exec(function (err, order) {
+            if (!err) {
+                if (order) {
+                    order.status = 'cancelled';
+                    order.save().then(() => {
+                        order.items.forEach((item) => {
+                            let subItems = [];
+                            if (item.sub_items.length) {
+                                subItems = item.sub_items.map((sub_item) => {
+                                    return {
+                                        ...sub_item.sub_item_id._doc,
+                                        count: sub_item.quantity,
+                                    };
+                                });
+                            }
+                            items.push({
+                                ...item.item_id._doc,
+                                count: item.quantity,
+                                items: subItems,
+                            });
+                        });
+                        // update products quantities
+                        items.forEach((item, index) => {
+                            if (item.items.length) {
+                                item.items.forEach((subItem) => {
+                                    Product.findById(subItem._id).then(
+                                        (product) => {
+                                            product.quantity += subItem.count;
+                                            product.sold -= subItem.count;
+                                            product.save();
+                                        }
+                                    );
+                                });
+                            }
+                            Product.findById(item._id).then((product) => {
+                                product.quantity += item.count;
+                                product.sold -= item.count;
+                                product.save().then(() => {
+                                    if (index === items.length - 1) {
+                                        res.send({
+                                            message:
+                                                'order was cancelled successfully',
+                                        });
+                                    }
+                                });
+                            });
+                        });
+                    });
                 } else {
-                    res.status(500).send(err);
+                    next(errorHandler('Not authorized!', 405));
                 }
             } else {
-                next(errorHandler('Not authorized!', 405));
+                res.status(500).send(err);
             }
-        }
-    );
+        });
 };
 exports.getMixBox = (req, res, next) => {
     req.user
