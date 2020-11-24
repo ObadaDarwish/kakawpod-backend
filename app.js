@@ -18,7 +18,8 @@ const adminRoute = require('./routes/admin_route');
 const shopRoute = require('./routes/shop_route');
 const productRoute = require('./routes/product_route');
 const isAuth = require('./middlewares/is_auth.js');
-
+// scheduler
+require('./scheduler/cron');
 // CORS headers
 app.use(cors());
 // view engine setup
