@@ -493,10 +493,13 @@ exports.requestOTP = (req, res, next) => {
 };
 
 exports.getDailyStats = (req, res, next) => {
-    const { startDate, endDate } = req.query;
+    let { startDate, endDate } = req.query;
     let findObj = {};
     const getStats = () => {
         if (startDate && endDate) {
+            if (startDate === endDate) {
+                endDate = parseInt(endDate) + 86400;
+            }
             findObj = {
                 createdAt: {
                     $gte: new Date(moment.unix(startDate)),
