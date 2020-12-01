@@ -26,4 +26,9 @@ route.put('/order/:code', isEmployee_Admin, admincontroller.updateOrder);
 route.post('/pos', isEmployee_Admin, admincontroller.createOrder);
 route.post('/OTP', isEmployee_Admin, admincontroller.requestOTP);
 route.post('/validateOTP/:code', isEmployee_Admin, admincontroller.validateOTP);
+// stats
+
+route.get('/stats/daily', isAdmin, admincontroller.getDailyStats);
+route.get('/stats/general', isAdmin, admincontroller.getGeneralStats);
+
 module.exports = route;

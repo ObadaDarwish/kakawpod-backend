@@ -1,6 +1,8 @@
 const Product = require('../models/product_model');
 const Order = require('../models/order_model');
 const Code = require('../models/code_model');
+const Stats = require('../models/statistics_model');
+const User = require('../models/user_model');
 const moment = require('moment');
 const crypto = require('crypto');
 const errorHandler = require('../utils/errorHandler');
@@ -486,5 +488,96 @@ exports.requestOTP = (req, res, next) => {
     });
     newCode.save().then(() => {
         res.send('OTP has been created successfully');
+    });
+};
+
+exports.getDailyStats = (req, res, next) => {
+    const { startDate, endDate } = req.query;
+    let findObj = {};
+    const getStats = () => {
+        if (startDate && endDate) {
+            findObj = {
+                createdAt: {
+                    $gte: new Date(moment.unix(startDate)),
+                    $lte: new Date(moment.unix(endDate)),
+                },
+            };
+            return Stats.aggregate([
+                { $match: findObj },
+                {
+                    $group: {
+                        _id: null,
+                        online_orders: { $sum: '$online_orders' },
+                        shop_orders: { $sum: '$shop_orders' },
+                        revenue: { $sum: '$revenue' },
+                        discounts: { $sum: '$discounts' },
+                        users: { $sum: '$users' },
+                    },
+                },
+            ]);
+        } else {
+            return Stats.find({}).sort({ createdAt: -1 }).limit(1);
+        }
+    };
+
+    getStats().then((result) => {
+        res.send(result);
+    });
+};
+
+exports.getGeneralStats = (req, res, next) => {
+    let ordersPromise = new Promise((resolve) => {
+        Order.find()
+            .count()
+            .then((count) => {
+                resolve(count);
+            })
+            .catch((err) => {
+                resolve(0);
+            });
+    });
+    let productsPromise = new Promise((resolve) => {
+        Product.find()
+            .count()
+            .then((count) => {
+                resolve(count);
+            })
+            .catch((err) => {
+                resolve(0);
+            });
+    });
+    let codesPromise = new Promise((resolve) => {
+        Code.find()
+            .count()
+            .then((count) => {
+                resolve(count);
+            })
+            .catch((err) => {
+                resolve(0);
+            });
+    });
+    let usersPromise = new Promise((resolve) => {
+        User.find()
+            .count()
+            .then((count) => {
+                resolve(count);
+            })
+            .catch((err) => {
+                resolve(0);
+            });
+    });
+
+    Promise.all([
+        ordersPromise,
+        productsPromise,
+        codesPromise,
+        usersPromise,
+    ]).then((result) => {
+        res.send({
+            orders: result[0],
+            products: result[1],
+            codes: result[2],
+            users: result[3],
+        });
     });
 };
