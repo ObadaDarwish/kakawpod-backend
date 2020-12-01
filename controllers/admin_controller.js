@@ -1,7 +1,8 @@
 const Product = require('../models/product_model');
 const Order = require('../models/order_model');
 const Code = require('../models/code_model');
-const Stats = require('../models/statistics_model');
+const DailyStats = require('../models/daily_statistics_model');
+const MonthlyStats = require('../models/monthly_statistics_model');
 const User = require('../models/user_model');
 const moment = require('moment');
 const crypto = require('crypto');
@@ -502,7 +503,7 @@ exports.getDailyStats = (req, res, next) => {
                     $lte: new Date(moment.unix(endDate)),
                 },
             };
-            return Stats.aggregate([
+            return DailyStats.aggregate([
                 { $match: findObj },
                 {
                     $group: {
@@ -516,7 +517,7 @@ exports.getDailyStats = (req, res, next) => {
                 },
             ]);
         } else {
-            return Stats.find({}).sort({ createdAt: -1 }).limit(1);
+            return DailyStats.find({}).sort({ createdAt: -1 }).limit(1);
         }
     };
 
@@ -525,6 +526,11 @@ exports.getDailyStats = (req, res, next) => {
     });
 };
 
+exports.getMonthlyStats = (req, res, next) => {
+    MonthlyStats.find().then((stats) => {
+        res.send(stats);
+    });
+};
 exports.getGeneralStats = (req, res, next) => {
     let ordersPromise = new Promise((resolve) => {
         Order.find()

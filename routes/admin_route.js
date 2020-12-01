@@ -29,6 +29,7 @@ route.post('/validateOTP/:code', isEmployee_Admin, admincontroller.validateOTP);
 // stats
 
 route.get('/stats/daily', isAdmin, admincontroller.getDailyStats);
+route.get('/stats/monthly', isAdmin, admincontroller.getMonthlyStats);
 route.get('/stats/general', isAdmin, admincontroller.getGeneralStats);
 
 module.exports = route;

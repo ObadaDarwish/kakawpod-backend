@@ -1,5 +1,6 @@
 const CronJob = require('cron').CronJob;
-const Stats = require('../models/statistics_model');
+const DailyStats = require('../models/daily_statistics_model');
+const MonthlyStats = require('../models/monthly_statistics_model');
 const {
     getOnlineOrdersCount,
     getShopOrdersCount,
@@ -7,7 +8,7 @@ const {
 } = require('./functions/orders_stats');
 const { getUsersCount } = require('./functions/user_stats');
 
-const job = new CronJob(
+const dailyJob = new CronJob(
     '0 1 * * *',
     function () {
         let onlineOrdersPromise = new Promise((resolve) => {
@@ -43,7 +44,7 @@ const job = new CronJob(
             totalOrdersPrice,
             usersCountPromise,
         ]).then((result) => {
-            let statistics = new Stats({
+            let statistics = new DailyStats({
                 online_orders: result[0],
                 shop_orders: result[1],
                 revenue: result[2].revenue,
@@ -57,4 +58,43 @@ const job = new CronJob(
     true,
     'Africa/Cairo'
 );
-job.start();
+dailyJob.start();
+
+const monthlyJob = new CronJob(
+    '0 1 1 * *',
+    function () {
+        const getDate = () => {
+            let date = new Date();
+            date.setDate(date.getDate() - 30);
+            return date;
+        };
+        DailyStats.aggregate([
+            { $match: { createdAt: { $gte: getDate() } } },
+            {
+                $group: {
+                    _id: null,
+                    online_orders: { $sum: '$online_orders' },
+                    shop_orders: { $sum: '$shop_orders' },
+                    revenue: { $sum: '$revenue' },
+                    discounts: { $sum: '$discounts' },
+                    users: { $sum: '$users' },
+                },
+            },
+        ]).then((data) => {
+            if (data.length) {
+                let monthlyStats = new MonthlyStats({
+                    online_orders: data[0].online_orders,
+                    shop_orders: data[0].shop_orders,
+                    revenue: data[0].revenue,
+                    discounts: data[0].discounts,
+                    users: data[0].users,
+                });
+                monthlyStats.save();
+            }
+        });
+    },
+    null,
+    true,
+    'Africa/Cairo'
+);
+monthlyJob.start();

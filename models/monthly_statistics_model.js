@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const statisticsSchema = new Schema(
+const MonthlyStatisticsSchema = new Schema(
     {
         revenue: {
             type: Number,
@@ -22,4 +22,4 @@ const statisticsSchema = new Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('Statistics', statisticsSchema);
+module.exports = mongoose.model('MonthlyStatistics', MonthlyStatisticsSchema);
