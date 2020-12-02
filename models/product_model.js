@@ -39,6 +39,10 @@ const productSchema = new Schema(
             type: Number,
             required: true,
         },
+        min_quantity: {
+            type: Number,
+            required: true,
+        },
         weight: {
             type: Number,
             required: true,

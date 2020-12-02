@@ -534,6 +534,20 @@ exports.getMonthlyStats = (req, res, next) => {
         res.send(stats);
     });
 };
+exports.getOrderPercentage = (req, res, next) => {
+    Order.find({ order_type: 'online' })
+        .count()
+        .then((onlineCount) => {
+            Order.find({ order_type: 'shop' })
+                .count()
+                .then((shopCount) => {
+                    res.json({
+                        online: (onlineCount / (onlineCount + shopCount)) * 100,
+                        shop: (shopCount / (onlineCount + shopCount)) * 100,
+                    });
+                });
+        });
+};
 exports.getGeneralStats = (req, res, next) => {
     let ordersPromise = new Promise((resolve) => {
         Order.find()
