@@ -5,8 +5,10 @@ const isAdmin = require('../middlewares/is_admin');
 const isEmployee_Admin = require('../middlewares/is_employee-admin');
 
 // admin
+
 route.get('/products', isAdmin, admincontroller.getProducts);
 route.post('/product', isAdmin, admincontroller.createProduct);
+route.get('/products/all', isAdmin, admincontroller.getAllProducts);
 route.post('/product/image', isAdmin, admincontroller.uploadProductImage);
 route.put('/product/:code', isAdmin, admincontroller.updateProduct);
 route.delete('/product/:code', isAdmin, admincontroller.toggleDeleteProduct);

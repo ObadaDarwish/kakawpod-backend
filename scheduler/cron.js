@@ -5,6 +5,7 @@ const {
     getOnlineOrdersCount,
     getShopOrdersCount,
     getTotalRevenueAndDiscount,
+    getCodesCount,
 } = require('./functions/orders_stats');
 const { getUsersCount } = require('./functions/user_stats');
 
@@ -38,11 +39,17 @@ const dailyJob = new CronJob(
                 resolve(count);
             });
         });
+        let codesCountPromise = new Promise((resolve) => {
+            getCodesCount().then((count) => {
+                resolve(count);
+            });
+        });
         Promise.all([
             onlineOrdersPromise,
             shopOrdersPromise,
             totalOrdersPrice,
             usersCountPromise,
+            codesCountPromise,
         ]).then((result) => {
             let statistics = new DailyStats({
                 online_orders: result[0],
@@ -50,6 +57,7 @@ const dailyJob = new CronJob(
                 revenue: result[2].revenue,
                 discounts: result[2].discount,
                 users: result[3],
+                codes: result[4],
             });
             statistics.save();
         });

@@ -2,7 +2,15 @@ const Product = require('../models/product_model');
 
 exports.getProduct = (req, res, next) => {
     const productId = req.params.code;
-    Product.findOne({ _id: productId, is_deleted: false })
+    Product.findOne(
+        { _id: productId, is_deleted: false },
+        {
+            quantity: 0,
+            sold: 0,
+            min_quantity: 0,
+            user_id: 0,
+        }
+    )
         .then((product) => {
             res.send(product);
         })
@@ -11,11 +19,21 @@ exports.getProduct = (req, res, next) => {
         });
 };
 exports.getTopSellingProducts = (req, res, next) => {
-    Product.find({
-        $or: [{ category: 'bar' }, { category: 'cooking' }],
-        is_deleted: false,
-    })
-        .sort({ sold: -1 })
+    Product.find(
+        {
+            $query: {
+                $or: [{ category: 'bar' }, { category: 'cooking' }],
+                is_deleted: false,
+            },
+            $orderby: { sold: -1 },
+        },
+        {
+            quantity: 0,
+            sold: 0,
+            min_quantity: 0,
+            user_id: 0,
+        }
+    )
         .limit(10)
         .exec(function (err, products) {
             if (err) {
@@ -30,7 +48,7 @@ exports.getAllProduct = (req, res, next) => {
     let total = 0;
 
     const getObj = () => {
-        findObj = { is_deleted: false };
+        let findObj = { is_deleted: false };
         if (category) {
             findObj.category = category;
         }
@@ -44,9 +62,12 @@ exports.getAllProduct = (req, res, next) => {
         .count()
         .then((totalProducts) => {
             total = totalProducts;
-            Product.find(getObj())
-                .skip((page - 1) * 10)
-                .limit(10)
+            Product.find(getObj(), {
+                quantity: 0,
+                sold: 0,
+                min_quantity: 0,
+                user_id: 0,
+            })
                 .then((products) => {
                     res.send({ products: products, total: total });
                 })

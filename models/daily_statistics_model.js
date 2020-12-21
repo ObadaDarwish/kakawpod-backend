@@ -15,6 +15,9 @@ const DailyStatisticsSchema = new Schema(
         discounts: {
             type: Number,
         },
+        codes: {
+            type: Number,
+        },
         users: {
             type: Number,
         },

@@ -13,8 +13,29 @@ const {
     getItems,
     updateProducts,
 } = require('./order_controller');
+exports.getAllProducts = (req, res, next) => {
+    const { category, type } = req.query;
+    const getObj = () => {
+        let findObj = { is_deleted: false };
+        if (category) {
+            findObj.category = category;
+        }
+        if (type) {
+            findObj.chocolate_type = type;
+        }
+        return findObj;
+    };
+    Product.find(getObj())
+        .sort({ sold: -1 })
+        .then((products) => {
+            res.send({ products: products });
+        })
+        .catch((err) => {
+            res.status(500).send(err);
+        });
+};
 exports.getProducts = (req, res, next) => {
-    const { page } = req.query;
+    const { page = 1 } = req.query;
     Product.find()
         .count()
         .then((total) => {
@@ -516,6 +537,7 @@ exports.getDailyStats = (req, res, next) => {
                         revenue: { $sum: '$revenue' },
                         discounts: { $sum: '$discounts' },
                         users: { $sum: '$users' },
+                        codes: { $sum: '$codes' },
                     },
                 },
             ]);

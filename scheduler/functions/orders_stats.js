@@ -1,5 +1,5 @@
 const Order = require('../../models/order_model');
-
+const Code = require('../../models/code_model');
 const getDate = () => {
     let date = new Date();
     date.setDate(date.getDate() - 1);
@@ -18,7 +18,11 @@ exports.getShopOrdersCount = () => {
         createdAt: { $gte: getDate() },
     }).count();
 };
-
+exports.getCodesCount = () => {
+    return Code.find({
+        createdAt: { $gte: getDate() },
+    }).count();
+};
 exports.getTotalRevenueAndDiscount = () => {
     return Order.aggregate([
         { $match: { createdAt: { $gte: getDate() } } },
